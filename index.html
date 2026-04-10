@@ -21,7 +21,6 @@
             background: var(--main-bg);
             margin: 0;
             padding: 8px;
-            /* 鎖定畫面不捲動 */
             height: 100dvh;
             overflow: hidden;
             display: flex;
@@ -176,7 +175,6 @@
             user-select: none;
         }
 
-        /* 解鎖按鈕的樣式與動畫設定 */
         #btnUnlock { 
             position: relative;
             overflow: hidden;
@@ -188,7 +186,6 @@
             touch-action: none;
         }
 
-        /* 隱藏的進度填充條 (由下往上) */
         #btnUnlock::before {
             content: '';
             position: absolute;
@@ -199,13 +196,11 @@
             transition: none;
         }
 
-        /* 當按鈕被加上 holding class 時，觸發 1.5 秒的等速填充動畫 */
         #btnUnlock.holding::before {
             height: 100%;
             transition: height 1.5s linear;
         }
 
-        /* 確保文字浮在填充動畫的上方 */
         #btnUnlock span {
             position: relative;
             z-index: 1;
@@ -216,7 +211,7 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手 v25</h1>
+        <h1>步頻助手 v26</h1>
         <button class="btn-refresh" id="btnRefresh">歸零</button>
     </div>
 
@@ -256,10 +251,7 @@
         let audioCtx, timerID = null, nextNoteTime = 0.0;
         let totalDistance = parseFloat(localStorage.getItem('simpleSavedDist')) || 0;
         let lastPosition = null;
-        
-        // 使用狀態標記來追蹤是否已經處於超速狀態
         let isOverSpeed = false; 
-        
         let isBikeMode = false;
 
         const speedDisplay = document.getElementById('speedDisplay');
@@ -267,7 +259,6 @@
         const bpmInput = document.getElementById('bpmInput');
         const metroLabel = document.getElementById('metroLabel');
         const btnModeToggle = document.getElementById('btnModeToggle');
-        
         const freqSlider = document.getElementById('freqSlider');
         const freqDisplay = document.getElementById('freqDisplay');
 
@@ -277,10 +268,26 @@
             freqDisplay.textContent = e.target.value;
         });
 
-        // 產生多段提示音的函數
+        // 絕對同步的音訊解鎖函數，不可加上 async/await
+        function unlockAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            // 發出 0.001 秒無聲音量，強制打通 iOS 音訊通道
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.001);
+        }
+
         function playBeeps(frequency, duration, repeat, interval) {
-            if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (!audioCtx || audioCtx.state === 'suspended') return;
             
             let startTime = audioCtx.currentTime;
             for (let i = 0; i < repeat; i++) {
@@ -303,14 +310,11 @@
             }
         }
 
-        // 以提示音取代語音報數 (僅播報 >20 與 <=18 的狀態切換)
         function announceSpeed(speed) {
             if (speed > 20 && !isOverSpeed) {
-                // 超過 20km 且尚未標記為超速：發出 5 聲高頻急促短音，並切換狀態
                 playBeeps(1200, 0.05, 5, 0.1);
                 isOverSpeed = true;
             } else if (speed <= 18 && isOverSpeed) {
-                // 速度降回 18km 以下且目前為超速狀態：發出 1 聲低沉長音，並解除超速狀態
                 playBeeps(300, 0.5, 1, 0);
                 isOverSpeed = false;
             }
@@ -343,24 +347,14 @@
         }
 
         document.getElementById('btnToggleGps').onclick = async (e) => {
-            // 初始化並強制解鎖 Web Audio 引擎
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            // 播放一段0.001秒的無聲音，確實獲取瀏覽器背景發聲許可
-            const unlockOsc = audioCtx.createOscillator();
-            const unlockGain = audioCtx.createGain();
-            unlockGain.gain.value = 0;
-            unlockOsc.connect(unlockGain);
-            unlockGain.connect(audioCtx.destination);
-            unlockOsc.start();
-            unlockOsc.stop(audioCtx.currentTime + 0.001);
+            // 【關鍵修正】第一時間同步執行音訊解鎖，絕不能放在 await 後面
+            unlockAudio();
 
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null; 
                 lastPosition = null; 
-                isOverSpeed = false; // 停止測速時，將狀態重置
+                isOverSpeed = false; 
                 e.target.textContent = "啟動測速與超速提示";
                 e.target.classList.remove('btn-active');
             } else {
@@ -388,13 +382,14 @@
         };
 
         document.getElementById('btnToggleMetro').onclick = async (e) => {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            // 【關鍵修正】同樣必須在第一時間同步執行音訊解鎖
+            unlockAudio();
+
             if (timerID) {
                 clearTimeout(timerID); timerID = null;
                 e.target.textContent = "開始打拍"; e.target.classList.remove('btn-active');
             } else {
                 await requestWakeLock();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
                 nextNoteTime = audioCtx.currentTime;
                 
                 const scheduler = () => {
