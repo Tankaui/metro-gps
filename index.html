@@ -319,9 +319,17 @@
         }
 
         document.getElementById('btnToggleGps').onclick = async (e) => {
+            // 在任何非同步操作前，先播放一段無聲字串來解鎖語音引擎
+            if (window.speechSynthesis) {
+                const unlockMsg = new SpeechSynthesisUtterance('');
+                window.speechSynthesis.speak(unlockMsg);
+            }
+
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
-                watchId = null; lastPosition = null; lastThreshold = -1;
+                watchId = null; 
+                lastPosition = null; 
+                lastThreshold = -1;
                 e.target.textContent = "啟動測速與雙向報數";
                 e.target.classList.remove('btn-active');
             } else {
