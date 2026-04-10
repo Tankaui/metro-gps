@@ -211,7 +211,7 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手 v26</h1>
+        <h1>步頻助手 v27</h1>
         <button class="btn-refresh" id="btnRefresh">歸零</button>
     </div>
 
@@ -253,6 +253,9 @@
         let lastPosition = null;
         let isOverSpeed = false; 
         let isBikeMode = false;
+        
+        // 新增：追蹤應用程式是否處於工作狀態
+        let isAppActive = false; 
 
         const speedDisplay = document.getElementById('speedDisplay');
         const distDisplay = document.getElementById('distDisplay');
@@ -268,7 +271,39 @@
             freqDisplay.textContent = e.target.value;
         });
 
-        // 絕對同步的音訊解鎖函數，不可加上 async/await
+        // 強化版 Wake Lock 請求機制
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    if (wakeLock !== null) {
+                        await wakeLock.release();
+                        wakeLock = null;
+                    }
+                    wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err) {
+                    console.warn('Wake Lock 失敗: 可能是處於省電模式，或並非 HTTPS 環境。');
+                }
+            }
+        }
+
+        // 檢查系統狀態，決定是否需要關閉長亮鎖
+        function checkAppStatus() {
+            if (!watchId && !timerID) {
+                isAppActive = false;
+                if (wakeLock !== null) {
+                    wakeLock.release().then(() => { wakeLock = null; });
+                }
+            }
+        }
+
+        // 監聽網頁可見度變化。若切換 APP 再回來，必須重新請求長亮
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && isAppActive) {
+                await requestWakeLock();
+            }
+        });
+
+        // 絕對同步的音訊解鎖函數
         function unlockAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -276,7 +311,6 @@
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
-            // 發出 0.001 秒無聲音量，強制打通 iOS 音訊通道
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             gain.gain.value = 0;
@@ -342,12 +376,7 @@
             }
         };
 
-        async function requestWakeLock() {
-            try { if ('wakeLock' in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
-        }
-
         document.getElementById('btnToggleGps').onclick = async (e) => {
-            // 【關鍵修正】第一時間同步執行音訊解鎖，絕不能放在 await 後面
             unlockAudio();
 
             if (watchId) {
@@ -357,8 +386,11 @@
                 isOverSpeed = false; 
                 e.target.textContent = "啟動測速與超速提示";
                 e.target.classList.remove('btn-active');
+                checkAppStatus(); // 關閉時檢查是否需釋放長亮鎖
             } else {
-                await requestWakeLock();
+                isAppActive = true;
+                await requestWakeLock(); // 啟動時請求長亮
+                
                 watchId = navigator.geolocation.watchPosition((pos) => {
                     let speedKmh = (pos.coords.speed || 0) * 3.6;
                     
@@ -382,14 +414,16 @@
         };
 
         document.getElementById('btnToggleMetro').onclick = async (e) => {
-            // 【關鍵修正】同樣必須在第一時間同步執行音訊解鎖
             unlockAudio();
 
             if (timerID) {
                 clearTimeout(timerID); timerID = null;
                 e.target.textContent = "開始打拍"; e.target.classList.remove('btn-active');
+                checkAppStatus(); // 關閉時檢查是否需釋放長亮鎖
             } else {
-                await requestWakeLock();
+                isAppActive = true;
+                await requestWakeLock(); // 啟動時請求長亮
+                
                 nextNoteTime = audioCtx.currentTime;
                 
                 const scheduler = () => {
