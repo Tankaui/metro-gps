@@ -196,7 +196,7 @@
             width: 100%; height: 0%;
             background: var(--accent-green);
             z-index: 0;
-            transition: none; /* 預設為無動畫，確保放開瞬間歸零 */
+            transition: none;
         }
 
         /* 當按鈕被加上 holding class 時，觸發 1.5 秒的等速填充動畫 */
@@ -216,7 +216,7 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手 v23</h1>
+        <h1>步頻助手 v24</h1>
         <button class="btn-refresh" id="btnRefresh">歸零</button>
     </div>
 
@@ -224,7 +224,7 @@
         <div class="label">目前時速</div>
         <div class="data" id="speedDisplay">0.0<span class="unit">km/h</span></div>
         <div class="sub-stats">里程: <span class="stat-highlight" id="distDisplay">0.00</span> km</div>
-        <button id="btnToggleGps" class="btn-main">啟動測速與雙向報數</button>
+        <button id="btnToggleGps" class="btn-main">啟動測速與提示音</button>
     </div>
 
     <div class="box">
@@ -275,18 +275,52 @@
             freqDisplay.textContent = e.target.value;
         });
 
+        // 產生多段提示音的函數
+        function playBeeps(frequency, duration, repeat, interval) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            let startTime = audioCtx.currentTime;
+            for (let i = 0; i < repeat; i++) {
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(frequency, startTime);
+
+                g.gain.setValueAtTime(1, startTime);
+                g.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+                osc.connect(g);
+                g.connect(audioCtx.destination);
+                
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+                
+                startTime += interval;
+            }
+        }
+
+        // 以提示音取代語音報數
         function announceSpeed(speed) {
-            const currentThreshold = Math.floor(speed / 5) * 5;
+            let currentThreshold;
+            
+            // 決定目前的級距 (20以上統一視為20級距，避免無上限一直觸發)
+            if (speed < 5) currentThreshold = 0;
+            else if (speed >= 20) currentThreshold = 20;
+            else currentThreshold = Math.floor(speed / 5) * 5;
             
             if (currentThreshold !== lastThreshold) {
-                if (currentThreshold >= 5) {
-                    const msg = new SpeechSynthesisUtterance(`時速 ${currentThreshold} 公里`);
-                    msg.lang = 'zh-TW';
-                    window.speechSynthesis.speak(msg);
-                } else if (currentThreshold === 0 && lastThreshold !== -1) {
-                    const msg = new SpeechSynthesisUtterance(`時速低於 5 公里`);
-                    msg.lang = 'zh-TW';
-                    window.speechSynthesis.speak(msg);
+                if (currentThreshold === 0 && lastThreshold !== -1) {
+                    playBeeps(300, 0.4, 1, 0); // 低於5公里：1聲低頻長音
+                } else if (currentThreshold === 5) {
+                    playBeeps(600, 0.1, 1, 0); // 5公里：1聲中頻短音
+                } else if (currentThreshold === 10) {
+                    playBeeps(600, 0.1, 2, 0.25); // 10公里：2聲中頻短音
+                } else if (currentThreshold === 15) {
+                    playBeeps(600, 0.1, 3, 0.25); // 15公里：3聲中頻短音
+                } else if (currentThreshold >= 20) {
+                    playBeeps(1200, 0.05, 5, 0.1); // 20公里(含)以上：5聲高頻急促短音
                 }
                 lastThreshold = currentThreshold;
             }
@@ -319,18 +353,25 @@
         }
 
         document.getElementById('btnToggleGps').onclick = async (e) => {
-            // 在任何非同步操作前，先播放一段無聲字串來解鎖語音引擎
-            if (window.speechSynthesis) {
-                const unlockMsg = new SpeechSynthesisUtterance('');
-                window.speechSynthesis.speak(unlockMsg);
-            }
+            // 初始化並強制解鎖 Web Audio 引擎
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // 播放一段0.001秒的無聲音，確實獲取瀏覽器背景發聲許可
+            const unlockOsc = audioCtx.createOscillator();
+            const unlockGain = audioCtx.createGain();
+            unlockGain.gain.value = 0;
+            unlockOsc.connect(unlockGain);
+            unlockGain.connect(audioCtx.destination);
+            unlockOsc.start();
+            unlockOsc.stop(audioCtx.currentTime + 0.001);
 
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null; 
                 lastPosition = null; 
                 lastThreshold = -1;
-                e.target.textContent = "啟動測速與雙向報數";
+                e.target.textContent = "啟動測速與提示音";
                 e.target.classList.remove('btn-active');
             } else {
                 await requestWakeLock();
@@ -403,7 +444,6 @@
         const btnUnlock = document.getElementById('btnUnlock');
         const btnUnlockText = btnUnlock.querySelector('span');
 
-        // 按下時：加上 holding class 觸發動畫，並更改文字
         btnUnlock.addEventListener('touchstart', (e) => {
             e.preventDefault(); 
             btnUnlock.classList.add('holding');
@@ -415,7 +455,6 @@
             }, 1500);
         }, { passive: false });
 
-        // 放開或中斷時：移除 holding class 讓動畫瞬間歸零，復原文字
         const cancelUnlock = (e) => {
             if(e && e.cancelable) e.preventDefault();
             clearTimeout(unlockTimer);
@@ -426,7 +465,6 @@
         btnUnlock.addEventListener('touchend', cancelUnlock, { passive: false });
         btnUnlock.addEventListener('touchcancel', cancelUnlock, { passive: false });
 
-        // 電腦版相容性
         btnUnlock.addEventListener('mousedown', (e) => {
             btnUnlock.classList.add('holding');
             btnUnlockText.textContent = "解鎖中...";
