@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>步頻速度助手V22</title>
+    <title>步頻速度助手</title>
     <style>
         :root {
             --main-bg: #eeeeee;
@@ -27,7 +27,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            touch-action: none; /* 徹底禁止整個畫面的系統原生拖曳/縮放 */
+            touch-action: none;
             -webkit-user-select: none;
             user-select: none;
             color: var(--text-main);
@@ -171,23 +171,52 @@
         #lockOverlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(20, 20, 20, 0.96); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white;
-            /* 阻止選取與長按選單 */
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
         }
 
+        /* 解鎖按鈕的樣式與動畫設定 */
         #btnUnlock { 
-            width: 160px; height: 160px; border-radius: 80px; background: var(--text-main); border: 4px solid white; font-size: 1.4em; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            position: relative;
+            overflow: hidden;
+            width: 160px; height: 160px; border-radius: 80px; 
+            background: var(--text-main); border: 4px solid white; 
+            font-size: 1.4em; color: white; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
             -webkit-touch-callout: none;
             touch-action: none;
+        }
+
+        /* 隱藏的進度填充條 (由下往上) */
+        #btnUnlock::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 0%;
+            background: var(--accent-green);
+            z-index: 0;
+            transition: none; /* 預設為無動畫，確保放開瞬間歸零 */
+        }
+
+        /* 當按鈕被加上 holding class 時，觸發 1.5 秒的等速填充動畫 */
+        #btnUnlock.holding::before {
+            height: 100%;
+            transition: height 1.5s linear;
+        }
+
+        /* 確保文字浮在填充動畫的上方 */
+        #btnUnlock span {
+            position: relative;
+            z-index: 1;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>步頻助手 v22</h1>
+        <h1>步頻助手</h1>
         <button class="btn-refresh" id="btnRefresh">歸零</button>
     </div>
 
@@ -218,8 +247,8 @@
     <button id="btnLock" class="btn-lock">螢幕休息 (鎖定)</button>
 
     <div id="lockOverlay" oncontextmenu="return false;">
-        <p>鎖定中，按住喚醒</p>
-        <button id="btnUnlock" oncontextmenu="return false;">按住喚醒</button>
+        <p>鎖定中，按住圓圈</p>
+        <button id="btnUnlock" oncontextmenu="return false;"><span>按住喚醒</span></button>
     </div>
 
     <script>
@@ -364,27 +393,39 @@
         
         let unlockTimer;
         const btnUnlock = document.getElementById('btnUnlock');
+        const btnUnlockText = btnUnlock.querySelector('span');
 
-        // 明確綁定觸控事件並阻擋系統預設行為
+        // 按下時：加上 holding class 觸發動畫，並更改文字
         btnUnlock.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // 阻擋文字選取或放大鏡
+            e.preventDefault(); 
+            btnUnlock.classList.add('holding');
+            btnUnlockText.textContent = "解鎖中...";
             unlockTimer = setTimeout(() => { 
                 document.getElementById('lockOverlay').style.display = 'none'; 
+                btnUnlock.classList.remove('holding');
+                btnUnlockText.textContent = "按住喚醒";
             }, 1500);
         }, { passive: false });
 
+        // 放開或中斷時：移除 holding class 讓動畫瞬間歸零，復原文字
         const cancelUnlock = (e) => {
             if(e && e.cancelable) e.preventDefault();
             clearTimeout(unlockTimer);
+            btnUnlock.classList.remove('holding');
+            btnUnlockText.textContent = "按住喚醒";
         };
 
         btnUnlock.addEventListener('touchend', cancelUnlock, { passive: false });
         btnUnlock.addEventListener('touchcancel', cancelUnlock, { passive: false });
 
-        // 保留給電腦版滑鼠點擊使用的相容性
+        // 電腦版相容性
         btnUnlock.addEventListener('mousedown', (e) => {
+            btnUnlock.classList.add('holding');
+            btnUnlockText.textContent = "解鎖中...";
             unlockTimer = setTimeout(() => { 
                 document.getElementById('lockOverlay').style.display = 'none'; 
+                btnUnlock.classList.remove('holding');
+                btnUnlockText.textContent = "按住喚醒";
             }, 1500);
         });
         btnUnlock.addEventListener('mouseup', cancelUnlock);
