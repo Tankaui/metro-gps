@@ -333,11 +333,22 @@
         document.getElementById('btnLock').onclick = () => document.getElementById('lockOverlay').style.display = 'flex';
         
         let unlockTimer;
-        document.getElementById('btnUnlock').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            unlockTimer = setTimeout(() => { document.getElementById('lockOverlay').style.display = 'none'; }, 1500);
+        const btnUnlock = document.getElementById('btnUnlock');
+
+        // pointerdown 可以同時支援手機觸控與電腦滑鼠點擊
+        btnUnlock.addEventListener('pointerdown', (e) => {
+            e.preventDefault(); 
+            // 設定 1.5 秒後解除鎖定
+            unlockTimer = setTimeout(() => { 
+                document.getElementById('lockOverlay').style.display = 'none'; 
+            }, 1500);
         });
-        document.getElementById('btnUnlock').addEventListener('touchend', () => clearTimeout(unlockTimer));
+
+        // 當放開、滑出按鈕範圍，或被系統中斷時，立刻取消計時
+        const cancelUnlock = () => clearTimeout(unlockTimer);
+        btnUnlock.addEventListener('pointerup', cancelUnlock);
+        btnUnlock.addEventListener('pointerleave', cancelUnlock);
+        btnUnlock.addEventListener('pointercancel', cancelUnlock);
     </script>
 </body>
 </html>
