@@ -22,14 +22,14 @@
             text-align: center;
             background: var(--main-bg);
             margin: 0;
-            padding: 8px;
-            padding-bottom: calc(8px + env(safe-area-inset-bottom));
-            padding-top: calc(8px + env(safe-area-inset-top));
+            padding: 12px; 
+            padding-bottom: calc(12px + env(safe-area-inset-bottom)); 
+            padding-top: calc(12px + env(safe-area-inset-top)); 
             box-sizing: border-box;
-            height: 100dvh;
+            height: 100dvh; 
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 10px; 
             overflow: hidden;
             touch-action: manipulation;
             -webkit-user-select: none;
@@ -37,72 +37,101 @@
             color: var(--text-main);
         }
 
-        h1 { 
-            font-size: 1.1em; 
-            margin: 2px 0; 
-            flex: 0 0 auto; 
-            font-weight: 600;
+        /* 頂部標題與重整按鈕區塊 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 5px;
+            box-sizing: border-box;
+            flex: 0 0 auto;
         }
 
+        h1 { 
+            font-size: 1.4em; /* 放大標題 */
+            margin: 0; 
+            font-weight: 700;
+        }
+
+        .btn-refresh {
+            background: transparent;
+            color: var(--sub-text);
+            font-size: 1em;
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn-refresh:active { background: #e0e0e0; }
+
+        /* 卡片配置 */
         .box {
             background: var(--card-bg);
-            border-radius: 12px;
-            padding: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border-radius: 16px;
+            padding: 15px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex: 1;
-            min-height: 0;
+            flex: 1; 
+            min-height: 0; 
         }
 
-        .label { font-size: 0.8em; color: var(--sub-text); margin-bottom: 2px; }
+        .label { font-size: 1em; color: var(--sub-text); margin-bottom: 5px; }
 
+        /* 重點數據大幅放大 */
         .data {
-            font-size: 2.2em;
+            font-size: 4em; 
             font-weight: 800;
             color: var(--text-main);
-            margin: 2px 0;
+            margin: 5px 0;
             font-variant-numeric: tabular-nums;
+            line-height: 1;
         }
 
         .unit { font-size: 0.3em; margin-left: 2px; color: var(--accent-green); }
 
         .control-group {
             width: 100%;
-            margin: 5px 0;
+            margin: 10px 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
         }
 
+        /* 按鈕放大 */
         button {
-            font-size: 0.9em;
+            font-size: 1.1em; 
             font-weight: bold;
             cursor: pointer;
             border: none;
-            border-radius: 10px;
-            background: var(--border-color);
+            border-radius: 12px;
+            background: var(--border-color); 
             color: var(--text-main);
             transition: transform 0.1s, background 0.2s;
             touch-action: manipulation;
-            padding: 10px 20px;
+            padding: 14px 20px;
         }
 
         button:active { transform: scale(0.95); background: #d0d0d0; }
 
+        /* 圓形按鈕放大 */
         .btn-round {
-            width: 45px;
-            height: 45px;
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
-            font-size: 1.5em;
+            font-size: 2em;
             padding: 0;
             flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .btn-main { width: 100%; padding: 12px; margin-top: 2px; }
+        .btn-main { width: 100%; padding: 16px; margin-top: 5px; }
         
         .btn-active {
             background: var(--accent-green) !important;
@@ -110,27 +139,29 @@
         }
         
         .btn-lock { 
-            background: var(--text-main);
+            background: var(--text-main); 
             color: white;
             width: 100%; 
-            padding: 15px; 
+            padding: 18px; 
             flex: 0 0 auto;
-            border-radius: 10px;
+            border-radius: 12px;
             margin: 0;
         }
 
+        /* BPM 輸入框放大 */
         input {
-            font-size: 1.8em;
-            width: 80px;
-            height: 45px;
+            font-size: 2.2em; 
+            width: 90px;
+            height: 55px;
             text-align: center;
             border: 2px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 10px;
             background: #fff;
             color: var(--text-main);
             font-weight: bold;
         }
 
+        /* 鎖定遮罩樣式調整 */
         #lockOverlay {
             display: none;
             position: fixed;
@@ -138,7 +169,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(20, 20, 20, 0.96);
+            background: rgba(20, 20, 20, 0.96); 
             z-index: 9999;
             flex-direction: column;
             justify-content: center;
@@ -146,15 +177,15 @@
             color: white;
         }
 
-        #unlockHint { margin-bottom: 20px; font-size: 1em; color: #aaaaaa; }
+        #unlockHint { margin-bottom: 30px; font-size: 1.2em; color: #aaaaaa; }
         
         #btnUnlock {
-            width: 130px;
-            height: 130px;
-            border-radius: 65px;
-            background: var(--text-main);
+            width: 160px;
+            height: 160px;
+            border-radius: 80px;
+            background: var(--text-main); 
             border: 4px solid white;
-            font-size: 1.2em;
+            font-size: 1.4em;
             line-height: 1.3;
             color: white;
             display: flex;
@@ -164,21 +195,24 @@
         }
         
         #unlockCountDown {
-            font-size: 2.2em;
+            font-size: 2.5em;
             font-weight: 800;
         }
 
-        .status-text { font-size: 0.8em; color: var(--sub-text); margin-top: 5px; }
+        .status-text { font-size: 0.9em; color: var(--sub-text); margin-top: 8px; }
     </style>
 </head>
 <body>
 
-    <h1>步頻速度助手</h1>
+    <div class="header">
+        <h1>步頻速度助手</h1>
+        <button class="btn-refresh" id="btnRefresh">重新整理</button>
+    </div>
 
     <div class="box">
         <div class="label">目前時速</div>
         <div class="data" id="speedDisplay">0.0<span class="unit">km/h</span></div>
-        <button id="btnStartGps" class="btn-main">開啟時速唸讀 (語音報數)</button>
+        <button id="btnToggleGps" class="btn-main">開啟時速唸讀 (語音報數)</button>
         <p class="status-text" id="gpsStatus">唸讀功能未啟用</p>
     </div>
 
@@ -212,6 +246,12 @@
         const bpmInput = document.getElementById('bpmInput');
         const gpsStatus = document.getElementById('gpsStatus');
 
+        // --- 0. 重新整理頁面 ---
+        document.getElementById('btnRefresh').onclick = () => {
+            window.location.reload();
+        };
+
+        // --- 1. 語音報數邏輯 ---
         function announceSpeed(speed) {
             const currentThreshold = Math.floor(speed / 5) * 5;
             if (currentThreshold > 0 && currentThreshold > lastThreshold) {
@@ -224,39 +264,64 @@
             }
         }
 
+        // --- 2. 防休眠功能 ---
         async function requestWakeLock() {
             try {
-                if ('wakeLock' in navigator) {
+                if ('wakeLock' in navigator && wakeLock === null) {
                     wakeLock = await navigator.wakeLock.request('screen');
                 }
             } catch (err) {
                 console.warn('無法啟動喚醒鎖');
             }
         }
+        
+        async function releaseWakeLock() {
+            if (wakeLock !== null) {
+                await wakeLock.release();
+                wakeLock = null;
+            }
+        }
 
-        document.getElementById('btnStartGps').onclick = async (e) => {
-            await requestWakeLock();
-            if (watchId !== null) return;
+        // --- 3. GPS 監控與語音 (切換機制) ---
+        document.getElementById('btnToggleGps').onclick = async (e) => {
+            if (watchId !== null) {
+                // 停止邏輯
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                lastThreshold = 0;
+                
+                // 如果節拍器也沒開，就釋放防休眠
+                if (timerID === null) releaseWakeLock();
 
-            watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    let speedKmh = (pos.coords.speed || 0) * 3.6;
-                    speedDisplay.innerHTML = `${speedKmh.toFixed(1)}<span class="unit">km/h</span>`;
-                    announceSpeed(speedKmh);
-                },
-                (err) => { 
-                    gpsStatus.textContent = "GPS 錯誤，請檢查權限";
-                    gpsStatus.style.color = "var(--danger-text)";
-                },
-                { enableHighAccuracy: true }
-            );
-            
-            e.target.textContent = "時速唸讀中";
-            e.target.classList.add('btn-active');
-            gpsStatus.textContent = "唸讀中 (每 5km/h)";
-            gpsStatus.style.color = "var(--accent-green)";
+                e.target.textContent = "開啟時速唸讀 (語音報數)";
+                e.target.classList.remove('btn-active');
+                gpsStatus.textContent = "唸讀已停止";
+                gpsStatus.style.color = "var(--sub-text)";
+                speedDisplay.innerHTML = `0.0<span class="unit">km/h</span>`;
+            } else {
+                // 開啟邏輯
+                await requestWakeLock();
+                watchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        let speedKmh = (pos.coords.speed || 0) * 3.6;
+                        speedDisplay.innerHTML = `${speedKmh.toFixed(1)}<span class="unit">km/h</span>`;
+                        announceSpeed(speedKmh);
+                    },
+                    (err) => { 
+                        gpsStatus.textContent = "GPS 錯誤，請檢查定位權限";
+                        gpsStatus.style.color = "var(--danger-text)";
+                    },
+                    { enableHighAccuracy: true }
+                );
+                
+                e.target.textContent = "停止時速唸讀";
+                e.target.classList.add('btn-active');
+                gpsStatus.textContent = "唸讀中 (每 5km/h)";
+                gpsStatus.style.color = "var(--accent-green)";
+            }
         };
 
+        // --- 4. 節拍器邏輯 ---
         function playNote(time) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -275,15 +340,22 @@
             timerID = setTimeout(scheduler, 25);
         }
 
-        document.getElementById('btnToggleMetro').onclick = (e) => {
+        document.getElementById('btnToggleMetro').onclick = async (e) => {
             document.activeElement.blur(); 
             
             if (!audioCtx) audioCtx = new AudioContext();
             if (timerID) {
-                clearTimeout(timerID); timerID = null;
+                // 停止邏輯
+                clearTimeout(timerID); 
+                timerID = null;
                 e.target.textContent = "開始打拍";
                 e.target.classList.remove('btn-active');
+                
+                // 如果 GPS 也沒開，就釋放防休眠
+                if (watchId === null) releaseWakeLock();
             } else {
+                // 開啟邏輯
+                await requestWakeLock();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
                 nextNoteTime = audioCtx.currentTime;
                 scheduler();
@@ -292,6 +364,7 @@
             }
         };
 
+        // --- 5. BPM 控制與輸入驗證 ---
         function validateBPM() {
             let val = parseInt(bpmInput.value);
             if (isNaN(val)) val = 120;
@@ -309,6 +382,7 @@
             bpmInput.value = Math.max(40, parseInt(bpmInput.value) - 1);
         };
 
+        // --- 6. 觸控鎖定與讀秒解鎖邏輯 ---
         const lockBtn = document.getElementById('btnLock');
         const lockOverlay = document.getElementById('lockOverlay');
         const unlockBtn = document.getElementById('btnUnlock');
