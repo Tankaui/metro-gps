@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>步頻速度助手V21</title>
+    <title>步頻速度助手V22</title>
     <style>
         :root {
             --main-bg: #eeeeee;
@@ -20,21 +20,20 @@
             text-align: center;
             background: var(--main-bg);
             margin: 0;
-            padding: 12px;
-            /* 增加底部 padding，避免被手機瀏覽器底部的工具列遮擋 */
-            padding-bottom: calc(24px + env(safe-area-inset-bottom));
-            padding-top: calc(12px + env(safe-area-inset-top));
-            box-sizing: border-box;
-            /* 改為 min-height 並允許上下滑動，避免內容過多時擠成一團 */
-            min-height: 100dvh;
+            padding: 8px;
+            /* 鎖定畫面不捲動 */
+            height: 100dvh;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            overflow-y: auto;
-            touch-action: manipulation;
+            gap: 8px;
+            touch-action: none; /* 徹底禁止整個畫面的系統原生拖曳/縮放 */
             -webkit-user-select: none;
             user-select: none;
             color: var(--text-main);
+            box-sizing: border-box;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            padding-top: calc(8px + env(safe-area-inset-top));
         }
 
         .header {
@@ -46,12 +45,12 @@
             flex: 0 0 auto;
         }
 
-        h1 { font-size: 1.4em; margin: 0; font-weight: 700; }
+        h1 { font-size: 1.3em; margin: 0; font-weight: 700; }
 
         .btn-refresh {
             background: transparent;
             color: var(--sub-text);
-            font-size: 0.9em;
+            font-size: 0.85em;
             padding: 6px 12px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -61,13 +60,14 @@
         .box {
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 15px;
+            padding: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex: 1 0 auto; /* 允許區塊依據內容長大 */
+            flex: 1;
+            min-height: 0;
         }
 
         .label-row {
@@ -75,10 +75,10 @@
             justify-content: center;
             align-items: center;
             gap: 10px;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
         }
 
-        .label { font-size: 1.1em; color: var(--sub-text); }
+        .label { font-size: 1em; color: var(--sub-text); }
 
         .mode-toggle {
             font-size: 0.8em;
@@ -96,21 +96,21 @@
         }
 
         .data {
-            font-size: 4.5em;
+            font-size: 4em;
             font-weight: 800;
             color: var(--text-main);
-            margin: 5px 0;
+            margin: 0;
             line-height: 1;
         }
 
         .unit { font-size: 0.3em; margin-left: 2px; color: var(--accent-green); }
 
-        .sub-stats { font-size: 1.2em; color: var(--sub-text); margin-bottom: 10px; }
+        .sub-stats { font-size: 1.1em; color: var(--sub-text); margin-bottom: 5px; }
         .stat-highlight { color: var(--text-main); font-weight: bold; }
 
         .control-group {
             width: 100%;
-            margin: 10px 0;
+            margin: 5px 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -129,26 +129,26 @@
         }
 
         .btn-round {
-            width: 60px; height: 60px; border-radius: 50%;
+            width: 55px; height: 55px; border-radius: 50%;
             font-size: 2em; display: flex; justify-content: center; align-items: center;
         }
 
-        .btn-main { width: 100%; padding: 18px; margin-top: 5px; }
+        .btn-main { width: 100%; padding: 15px; margin-top: 5px; }
         .btn-active { background: var(--accent-green) !important; color: white !important; }
 
         .btn-lock {
             background: var(--text-main);
             color: white;
             width: 100%;
-            padding: 20px;
+            padding: 16px;
             flex: 0 0 auto;
             border-radius: 12px;
         }
 
         input[type="number"] {
-            font-size: 2.2em;
-            width: 110px;
-            height: 60px;
+            font-size: 2em;
+            width: 100px;
+            height: 55px;
             text-align: center;
             border: 2px solid var(--border-color);
             border-radius: 10px;
@@ -159,11 +159,11 @@
 
         input[type="range"] {
             width: 85%;
-            margin: 8px 0 12px 0;
+            margin: 5px 0 10px 0;
         }
 
         .freq-label {
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: var(--sub-text);
             margin-top: 5px;
         }
@@ -171,11 +171,14 @@
         #lockOverlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(20, 20, 20, 0.96); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white;
+            /* 阻止選取與長按選單 */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         #btnUnlock { 
             width: 160px; height: 160px; border-radius: 80px; background: var(--text-main); border: 4px solid white; font-size: 1.4em; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            /* 阻擋 iOS 預設的長按選單與手勢，確保長按解鎖能正常運作 */
             -webkit-touch-callout: none;
             touch-action: none;
         }
@@ -184,7 +187,7 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手</h1>
+        <h1>步頻助手 v22</h1>
         <button class="btn-refresh" id="btnRefresh">歸零</button>
     </div>
 
@@ -214,9 +217,9 @@
 
     <button id="btnLock" class="btn-lock">螢幕休息 (鎖定)</button>
 
-    <div id="lockOverlay">
+    <div id="lockOverlay" oncontextmenu="return false;">
         <p>鎖定中，按住喚醒</p>
-        <button id="btnUnlock">按住喚醒</button>
+        <button id="btnUnlock" oncontextmenu="return false;">按住喚醒</button>
     </div>
 
     <script>
@@ -362,17 +365,31 @@
         let unlockTimer;
         const btnUnlock = document.getElementById('btnUnlock');
 
-        btnUnlock.addEventListener('pointerdown', (e) => {
-            e.preventDefault(); 
+        // 明確綁定觸控事件並阻擋系統預設行為
+        btnUnlock.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // 阻擋文字選取或放大鏡
+            unlockTimer = setTimeout(() => { 
+                document.getElementById('lockOverlay').style.display = 'none'; 
+            }, 1500);
+        }, { passive: false });
+
+        const cancelUnlock = (e) => {
+            if(e && e.cancelable) e.preventDefault();
+            clearTimeout(unlockTimer);
+        };
+
+        btnUnlock.addEventListener('touchend', cancelUnlock, { passive: false });
+        btnUnlock.addEventListener('touchcancel', cancelUnlock, { passive: false });
+
+        // 保留給電腦版滑鼠點擊使用的相容性
+        btnUnlock.addEventListener('mousedown', (e) => {
             unlockTimer = setTimeout(() => { 
                 document.getElementById('lockOverlay').style.display = 'none'; 
             }, 1500);
         });
+        btnUnlock.addEventListener('mouseup', cancelUnlock);
+        btnUnlock.addEventListener('mouseleave', cancelUnlock);
 
-        const cancelUnlock = () => clearTimeout(unlockTimer);
-        btnUnlock.addEventListener('pointerup', cancelUnlock);
-        btnUnlock.addEventListener('pointerleave', cancelUnlock);
-        btnUnlock.addEventListener('pointercancel', cancelUnlock);
     </script>
 </body>
 </html>
