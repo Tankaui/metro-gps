@@ -3,123 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>簡易節拍測速器</title>
+    <title>步頻速度助手</title>
     <style>
         :root {
-            --primary-color: #1a73e8;
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --danger-color: #d93025;
-            --success-color: #00875a;
+            /* 淺灰與淺綠色調定義 */
+            --main-bg: #eeeeee; /* 淺灰色主背景 */
+            --card-bg: #ffffff; /* 白色卡片 */
+            --text-main: #333333; /* 暗灰色主文字 */
+            --sub-text: #777777; /* 灰色副文字 */
+            --accent-green: #81c784; /* 淺綠色副色 */
+            --border-color: #e0e0e0;
+            --danger-text: #d93025; /* 警告用紅色文字 */
         }
 
-        /* 嚴格限制為一頁高度，禁止任何滑動 */
+        /* 嚴格壓縮排版，禁止任何滑動 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             text-align: center;
-            background: var(--bg-color);
+            background: var(--main-bg);
             margin: 0;
-            padding: 15px;
-            padding-bottom: calc(15px + env(safe-area-inset-bottom)); /* 支援 iOS 底部安全區域 */
+            padding: 8px; /* 極小間距 */
+            padding-bottom: calc(8px + env(safe-area-inset-bottom)); /* 支援 iOS 底部安全區域 */
+            padding-top: calc(8px + env(safe-area-inset-top)); /* 支援動態島/劉海區域 */
             box-sizing: border-box;
             height: 100dvh; /* 動態視口高度，完美貼合 iOS Safari */
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 5px; /* 元件間極小間距 */
             overflow: hidden;
             touch-action: manipulation;
             -webkit-user-select: none;
             user-select: none;
+            color: var(--text-main);
         }
 
+        /* 標題縮小且無上下邊距 */
         h1 { 
-            color: #333; 
-            margin: 5px 0; 
-            font-size: 1.5em; 
+            font-size: 1.1em; 
+            margin: 2px 0; 
             flex: 0 0 auto; 
+            font-weight: 600;
         }
 
-        /* 讓區塊彈性填滿剩餘高度 */
+        /* 卡片極致壓縮 */
         .box {
             background: var(--card-bg);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-radius: 12px;
+            padding: 10px; /* 大幅減少內距 */
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex: 1; 
+            flex: 1; /* 彈性填滿剩餘高度 */
+            min-height: 0; /* 允許卡片縮小 */
         }
 
-        .label { font-size: 0.9em; color: #666; margin-bottom: 5px; }
+        .label { font-size: 0.8em; color: var(--sub-text); margin-bottom: 2px; }
 
+        /* 重點數據縮小 */
         .data {
-            font-size: 3.5em;
+            font-size: 2.2em; /* 大幅縮小 */
             font-weight: 800;
-            color: var(--primary-color);
-            margin: 5px 0;
+            color: var(--text-main);
+            margin: 2px 0;
             font-variant-numeric: tabular-nums;
         }
 
-        .unit { font-size: 0.3em; margin-left: 5px; color: #999; }
+        .unit { font-size: 0.3em; margin-left: 2px; color: var(--accent-green); }
 
         .control-group {
             width: 100%;
-            margin: 15px 0;
+            margin: 5px 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
         }
 
+        /* 按鈕極致壓縮 */
         button {
-            font-size: 1.1em;
+            font-size: 0.9em; /* 大幅縮小 */
             font-weight: bold;
             cursor: pointer;
             border: none;
-            border-radius: 12px;
-            background: #333;
-            color: white;
+            border-radius: 10px;
+            background: var(--border-color); /* 預設淡灰色按鈕背景 */
+            color: var(--text-main);
             transition: transform 0.1s, background 0.2s;
             touch-action: manipulation;
+            padding: 10px 20px;
         }
 
-        button:active { transform: scale(0.95); background: #555; }
+        button:active { transform: scale(0.95); background: #d0d0d0; }
 
+        /* 圓形按鈕縮小 */
         .btn-round {
-            width: 55px;
-            height: 55px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            font-size: 1.8em;
+            font-size: 1.5em;
             padding: 0;
             flex-shrink: 0;
         }
 
-        .btn-main { width: 100%; padding: 15px; margin-top: 5px; }
-        .btn-gps { background: var(--success-color); width: 100%; padding: 15px; }
+        /* 主要按鈕極致壓縮 */
+        .btn-main { width: 100%; padding: 12px; margin-top: 2px; }
         
-        /* 觸控鎖定按鈕固定在最下方 */
+        /* 啟動狀態轉為淺綠色 */
+        .btn-active {
+            background: var(--accent-green) !important;
+            color: white !important;
+        }
+        
+        /* 鎖定按鈕固定在最下方且無邊距 */
         .btn-lock { 
-            background: var(--danger-color); 
+            background: var(--text-main); /* 預設暗灰色按鈕 */
+            color: white;
             width: 100%; 
-            padding: 18px; 
+            padding: 15px; 
             flex: 0 0 auto;
+            border-radius: 10px;
+            margin: 0;
         }
 
+        /* BPM 輸入框縮小 */
         input {
-            font-size: 2em;
-            width: 90px;
-            height: 55px;
+            font-size: 1.8em; /* 大幅縮小 */
+            width: 80px;
+            height: 45px;
             text-align: center;
-            border: 2px solid #eee;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
             background: #fff;
-            color: #333;
+            color: var(--text-main);
             font-weight: bold;
         }
 
-        /* 鎖定遮罩樣式 */
+        /* 鎖定遮罩樣式調整 */
         #lockOverlay {
             display: none;
             position: fixed;
@@ -127,7 +148,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.92);
+            background: rgba(20, 20, 20, 0.96); /* 更深的暗灰遮罩 */
             z-index: 9999;
             flex-direction: column;
             justify-content: center;
@@ -135,34 +156,45 @@
             color: white;
         }
 
-        #unlockHint { margin-bottom: 30px; font-size: 1.2em; color: #aaa; }
+        #unlockHint { margin-bottom: 20px; font-size: 1em; color: #aaaaaa; }
         
         #btnUnlock {
-            width: 150px;
-            height: 150px;
-            border-radius: 75px;
-            background: var(--danger-color);
-            border: 5px solid white;
-            font-size: 1.3em;
+            width: 130px;
+            height: 130px;
+            border-radius: 65px;
+            background: var(--text-main); /* 預設深灰色解鎖按鈕 */
+            border: 4px solid white;
+            font-size: 1.2em;
             line-height: 1.3;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* 解鎖讀秒數字 */
+        #unlockCountDown {
+            font-size: 2.2em;
+            font-weight: 800;
         }
 
-        .status-text { font-size: 0.85em; color: #888; margin-top: 10px; }
+        .status-text { font-size: 0.8em; color: var(--sub-text); margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <h1>節拍測速</h1>
+    <h1>步頻速度助手</h1>
 
     <div class="box">
         <div class="label">目前時速</div>
         <div class="data" id="speedDisplay">0.0<span class="unit">km/h</span></div>
-        <button id="btnStartGps" class="btn-gps">啟動監測與語音報數</button>
-        <p class="status-text" id="gpsStatus">GPS 未啟動</p>
+        <button id="btnStartGps" class="btn-main">開啟時速唸讀 (語音報數)</button>
+        <p class="status-text" id="gpsStatus">唸讀功能未啟用</p>
     </div>
 
     <div class="box">
-        <div class="label">節拍器設定 (BPM)</div>
+        <div class="label">步頻 (BPM)</div>
         <div class="control-group">
             <button class="btn-round" id="btnMinus">−</button>
             <input type="number" id="bpmInput" value="120" inputmode="numeric">
@@ -171,11 +203,14 @@
         <button id="btnToggleMetro" class="btn-main">開始打拍</button>
     </div>
 
-    <button id="btnLock" class="btn-lock">開啟觸控鎖定</button>
+    <button id="btnLock" class="btn-lock">螢幕休息 (鎖住)</button>
 
     <div id="lockOverlay">
-        <p id="unlockHint">螢幕已鎖定，防誤觸模式</p>
-        <button id="btnUnlock">長按解鎖</button>
+        <p id="unlockHint">螢幕休息中，按住可以喚醒喔！</p>
+        <button id="btnUnlock">
+            按住喚醒
+            <div id="unlockCountDown" style="display: none;"></div>
+        </button>
     </div>
 
     <script>
@@ -207,15 +242,14 @@
             try {
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('喚醒鎖啟動');
                 }
             } catch (err) {
                 console.warn('無法啟動喚醒鎖');
             }
         }
 
-        // --- 3. GPS 監控 ---
-        document.getElementById('btnStartGps').onclick = async () => {
+        // --- 3. GPS 監控與語音 ---
+        document.getElementById('btnStartGps').onclick = async (e) => {
             await requestWakeLock();
             if (watchId !== null) return;
 
@@ -227,12 +261,16 @@
                 },
                 (err) => { 
                     gpsStatus.textContent = "GPS 錯誤，請檢查權限";
-                    gpsStatus.style.color = "red";
+                    gpsStatus.style.color = "var(--danger-text)";
                 },
                 { enableHighAccuracy: true }
             );
-            gpsStatus.textContent = "語音報數已啟動 (每 5km/h)";
-            gpsStatus.style.color = var(--success-color);
+            
+            // 更改文字與顏色
+            e.target.textContent = "時速唸讀中";
+            e.target.classList.add('btn-active');
+            gpsStatus.textContent = "唸讀中 (每 5km/h)";
+            gpsStatus.style.color = "var(--accent-green)";
         };
 
         // --- 4. 節拍器邏輯 ---
@@ -261,11 +299,13 @@
             if (timerID) {
                 clearTimeout(timerID); timerID = null;
                 e.target.textContent = "開始打拍";
+                e.target.classList.remove('btn-active');
             } else {
                 if (audioCtx.state === 'suspended') audioCtx.resume();
                 nextNoteTime = audioCtx.currentTime;
                 scheduler();
                 e.target.textContent = "停止打拍";
+                e.target.classList.add('btn-active');
             }
         };
 
@@ -291,6 +331,7 @@
         const lockBtn = document.getElementById('btnLock');
         const lockOverlay = document.getElementById('lockOverlay');
         const unlockBtn = document.getElementById('btnUnlock');
+        const unlockCountDown = document.getElementById('unlockCountDown');
         
         let unlockTimer;
         let countdownInterval;
@@ -306,14 +347,15 @@
         const startUnlock = (e) => {
             e.preventDefault(); // 防止預設縮放行為
             timeLeft = 2;
-            unlockBtn.innerHTML = `解鎖中<br>${timeLeft}`;
-            unlockBtn.style.background = "#ff9800";
+            
+            unlockBtn.innerHTML = `唤醒...<div id="unlockCountDown">${timeLeft}</div>`; // 初始化讀秒
+            unlockBtn.style.background = var(--accent-green); // 喚醒中轉為淺綠色
             
             // 每秒更新數字
             countdownInterval = setInterval(() => {
                 timeLeft--;
                 if (timeLeft > 0) {
-                    unlockBtn.innerHTML = `解鎖中<br>${timeLeft}`;
+                    unlockBtn.innerHTML = `唤醒...<div id="unlockCountDown">${timeLeft}</div>`;
                 }
             }, 1000);
 
@@ -333,8 +375,8 @@
         };
 
         function resetUnlockBtn() {
-            unlockBtn.innerHTML = "長按解鎖";
-            unlockBtn.style.background = var(--danger-color);
+            unlockBtn.innerHTML = "按住喚醒";
+            unlockBtn.style.background = var(--text-main); // 深灰色
         }
 
         // 綁定解鎖事件（支援滑鼠與觸控）
