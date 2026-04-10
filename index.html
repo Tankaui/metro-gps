@@ -175,7 +175,7 @@
         <div class="label">目前時速</div>
         <div class="data" id="speedDisplay">0.0<span class="unit">km/h</span></div>
         <div class="sub-stats">里程: <span class="stat-highlight" id="distDisplay">0.00</span> km</div>
-        <button id="btnToggleGps" class="btn-main">啟動測速</button>
+        <button id="btnToggleGps" class="btn-main">啟動測速與報數</button>
     </div>
 
     <div class="box">
@@ -203,8 +203,8 @@
         let audioCtx, timerID = null, nextNoteTime = 0.0;
         let totalDistance = parseFloat(localStorage.getItem('simpleSavedDist')) || 0;
         let lastPosition = null;
+        let lastThreshold = 0; // 語音報數門檻
         
-        // 模式狀態：false = 一般 (BPM), true = 自行車 (RPM)
         let isBikeMode = false;
 
         const speedDisplay = document.getElementById('speedDisplay');
@@ -215,24 +215,33 @@
 
         distDisplay.textContent = totalDistance.toFixed(2);
 
-        // --- 模式切換邏輯 ---
+        // --- 語音報數函式 ---
+        function announceSpeed(speed) {
+            const currentThreshold = Math.floor(speed / 5) * 5;
+            if (currentThreshold > 0 && currentThreshold > lastThreshold) {
+                const msg = new SpeechSynthesisUtterance(`時速 ${currentThreshold} 公里`);
+                msg.lang = 'zh-TW';
+                window.speechSynthesis.speak(msg);
+                lastThreshold = currentThreshold;
+            } else if (currentThreshold < lastThreshold) {
+                lastThreshold = currentThreshold; 
+            }
+        }
+
         btnModeToggle.onclick = () => {
             isBikeMode = !isBikeMode;
             btnModeToggle.classList.toggle('active', isBikeMode);
             if (isBikeMode) {
                 metroLabel.textContent = "自行車踏頻 (RPM)";
                 btnModeToggle.textContent = "切換一般";
-                // 換算顯示數值：BPM 180 -> RPM 90
                 bpmInput.value = Math.round(parseInt(bpmInput.value) / 2);
             } else {
                 metroLabel.textContent = "一般步頻 (BPM)";
                 btnModeToggle.textContent = "切換自行車";
-                // 換算顯示數值：RPM 90 -> BPM 180
                 bpmInput.value = Math.round(parseInt(bpmInput.value) * 2);
             }
         };
 
-        // --- 歸零 ---
         document.getElementById('btnRefresh').onclick = () => {
             if(confirm("歸零里程？")) {
                 totalDistance = 0;
@@ -245,17 +254,20 @@
             try { if ('wakeLock' in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
         }
 
-        // --- GPS ---
         document.getElementById('btnToggleGps').onclick = async (e) => {
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
-                watchId = null; lastPosition = null;
-                e.target.textContent = "啟動測速";
+                watchId = null; lastPosition = null; lastThreshold = 0;
+                e.target.textContent = "啟動測速與報數";
                 e.target.classList.remove('btn-active');
             } else {
                 await requestWakeLock();
                 watchId = navigator.geolocation.watchPosition((pos) => {
                     let speedKmh = (pos.coords.speed || 0) * 3.6;
+                    
+                    // 執行語音報數
+                    announceSpeed(speedKmh);
+
                     if (lastPosition && speedKmh > 1.5) {
                         const R = 6371;
                         const dLat = (pos.coords.latitude - lastPosition.lat) * Math.PI / 180;
@@ -273,7 +285,6 @@
             }
         };
 
-        // --- 節拍器核心邏輯 ---
         document.getElementById('btnToggleMetro').onclick = async (e) => {
             if (!audioCtx) audioCtx = new AudioContext();
             if (timerID) {
@@ -292,7 +303,6 @@
                         g.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.05);
                         osc.start(nextNoteTime); osc.stop(nextNoteTime + 0.05);
                         
-                        // 關鍵換算：如果是自行車模式，輸入 90 RPM，實際要響 180 次
                         let displayVal = parseInt(bpmInput.value);
                         let actualBpm = isBikeMode ? displayVal * 2 : displayVal;
                         
