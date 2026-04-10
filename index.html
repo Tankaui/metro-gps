@@ -203,7 +203,7 @@
         let audioCtx, timerID = null, nextNoteTime = 0.0;
         let totalDistance = parseFloat(localStorage.getItem('simpleSavedDist')) || 0;
         let lastPosition = null;
-        let lastThreshold = -1; // 初始化設為 -1，確保 0 也能被正確觸發
+        let lastThreshold = -1; 
         
         let isBikeMode = false;
 
@@ -215,18 +215,15 @@
 
         distDisplay.textContent = totalDistance.toFixed(2);
 
-        // --- 修正後的雙向報數函式 ---
         function announceSpeed(speed) {
             const currentThreshold = Math.floor(speed / 5) * 5;
             
-            // 只要跨越了 5 的倍數級距（不論加減速），且跟上一次不同
             if (currentThreshold !== lastThreshold) {
                 if (currentThreshold >= 5) {
                     const msg = new SpeechSynthesisUtterance(`時速 ${currentThreshold} 公里`);
                     msg.lang = 'zh-TW';
                     window.speechSynthesis.speak(msg);
                 } else if (currentThreshold === 0 && lastThreshold !== -1) {
-                    // 只有在原本有速度但現在停下來時才報
                     const msg = new SpeechSynthesisUtterance(`時速低於 5 公里`);
                     msg.lang = 'zh-TW';
                     window.speechSynthesis.speak(msg);
@@ -305,9 +302,21 @@
                     while (nextNoteTime < audioCtx.currentTime + 0.1) {
                         const osc = audioCtx.createOscillator();
                         const g = audioCtx.createGain();
-                        osc.connect(g); g.connect(audioCtx.destination);
+
+                        // 調整波形與頻率，增加聲音穿透力
+                        osc.type = 'square'; 
+                        osc.frequency.setValueAtTime(880, nextNoteTime); 
+
+                        // 明確設定初始音量為 1 (最大)，再快速遞減產生短促音
+                        g.gain.setValueAtTime(1, nextNoteTime);
                         g.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.05);
-                        osc.start(nextNoteTime); osc.stop(nextNoteTime + 0.05);
+
+                        osc.connect(g); 
+                        g.connect(audioCtx.destination);
+                        
+                        osc.start(nextNoteTime); 
+                        osc.stop(nextNoteTime + 0.05);
+                        
                         let displayVal = parseInt(bpmInput.value);
                         let actualBpm = isBikeMode ? displayVal * 2 : displayVal;
                         nextNoteTime += 60.0 / actualBpm;
