@@ -7,13 +7,13 @@
     <style>
         :root {
             /* 淺灰與淺綠色調定義 */
-            --main-bg: #eeeeee; /* 淺灰色主背景 */
-            --card-bg: #ffffff; /* 白色卡片 */
-            --text-main: #333333; /* 暗灰色主文字 */
-            --sub-text: #777777; /* 灰色副文字 */
-            --accent-green: #81c784; /* 淺綠色副色 */
+            --main-bg: #eeeeee;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --sub-text: #777777;
+            --accent-green: #81c784;
             --border-color: #e0e0e0;
-            --danger-text: #d93025; /* 警告用紅色文字 */
+            --danger-text: #d93025;
         }
 
         /* 嚴格壓縮排版，禁止任何滑動 */
@@ -22,14 +22,14 @@
             text-align: center;
             background: var(--main-bg);
             margin: 0;
-            padding: 8px; /* 極小間距 */
-            padding-bottom: calc(8px + env(safe-area-inset-bottom)); /* 支援 iOS 底部安全區域 */
-            padding-top: calc(8px + env(safe-area-inset-top)); /* 支援動態島/劉海區域 */
+            padding: 8px;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            padding-top: calc(8px + env(safe-area-inset-top));
             box-sizing: border-box;
-            height: 100dvh; /* 動態視口高度，完美貼合 iOS Safari */
+            height: 100dvh;
             display: flex;
             flex-direction: column;
-            gap: 5px; /* 元件間極小間距 */
+            gap: 5px;
             overflow: hidden;
             touch-action: manipulation;
             -webkit-user-select: none;
@@ -37,7 +37,6 @@
             color: var(--text-main);
         }
 
-        /* 標題縮小且無上下邊距 */
         h1 { 
             font-size: 1.1em; 
             margin: 2px 0; 
@@ -45,25 +44,23 @@
             font-weight: 600;
         }
 
-        /* 卡片極致壓縮 */
         .box {
             background: var(--card-bg);
             border-radius: 12px;
-            padding: 10px; /* 大幅減少內距 */
+            padding: 10px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex: 1; /* 彈性填滿剩餘高度 */
-            min-height: 0; /* 允許卡片縮小 */
+            flex: 1;
+            min-height: 0;
         }
 
         .label { font-size: 0.8em; color: var(--sub-text); margin-bottom: 2px; }
 
-        /* 重點數據縮小 */
         .data {
-            font-size: 2.2em; /* 大幅縮小 */
+            font-size: 2.2em;
             font-weight: 800;
             color: var(--text-main);
             margin: 2px 0;
@@ -81,14 +78,13 @@
             gap: 10px;
         }
 
-        /* 按鈕極致壓縮 */
         button {
-            font-size: 0.9em; /* 大幅縮小 */
+            font-size: 0.9em;
             font-weight: bold;
             cursor: pointer;
             border: none;
             border-radius: 10px;
-            background: var(--border-color); /* 預設淡灰色按鈕背景 */
+            background: var(--border-color);
             color: var(--text-main);
             transition: transform 0.1s, background 0.2s;
             touch-action: manipulation;
@@ -97,7 +93,6 @@
 
         button:active { transform: scale(0.95); background: #d0d0d0; }
 
-        /* 圓形按鈕縮小 */
         .btn-round {
             width: 45px;
             height: 45px;
@@ -107,18 +102,15 @@
             flex-shrink: 0;
         }
 
-        /* 主要按鈕極致壓縮 */
         .btn-main { width: 100%; padding: 12px; margin-top: 2px; }
         
-        /* 啟動狀態轉為淺綠色 */
         .btn-active {
             background: var(--accent-green) !important;
             color: white !important;
         }
         
-        /* 鎖定按鈕固定在最下方且無邊距 */
         .btn-lock { 
-            background: var(--text-main); /* 預設暗灰色按鈕 */
+            background: var(--text-main);
             color: white;
             width: 100%; 
             padding: 15px; 
@@ -127,9 +119,8 @@
             margin: 0;
         }
 
-        /* BPM 輸入框縮小 */
         input {
-            font-size: 1.8em; /* 大幅縮小 */
+            font-size: 1.8em;
             width: 80px;
             height: 45px;
             text-align: center;
@@ -140,7 +131,6 @@
             font-weight: bold;
         }
 
-        /* 鎖定遮罩樣式調整 */
         #lockOverlay {
             display: none;
             position: fixed;
@@ -148,7 +138,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(20, 20, 20, 0.96); /* 更深的暗灰遮罩 */
+            background: rgba(20, 20, 20, 0.96);
             z-index: 9999;
             flex-direction: column;
             justify-content: center;
@@ -162,7 +152,7 @@
             width: 130px;
             height: 130px;
             border-radius: 65px;
-            background: var(--text-main); /* 預設深灰色解鎖按鈕 */
+            background: var(--text-main);
             border: 4px solid white;
             font-size: 1.2em;
             line-height: 1.3;
@@ -173,7 +163,6 @@
             align-items: center;
         }
         
-        /* 解鎖讀秒數字 */
         #unlockCountDown {
             font-size: 2.2em;
             font-weight: 800;
@@ -214,7 +203,6 @@
     </div>
 
     <script>
-        // --- 全域變數 ---
         let watchId = null;
         let wakeLock = null;
         let lastThreshold = 0;
@@ -224,7 +212,6 @@
         const bpmInput = document.getElementById('bpmInput');
         const gpsStatus = document.getElementById('gpsStatus');
 
-        // --- 1. 語音報數邏輯 ---
         function announceSpeed(speed) {
             const currentThreshold = Math.floor(speed / 5) * 5;
             if (currentThreshold > 0 && currentThreshold > lastThreshold) {
@@ -237,7 +224,6 @@
             }
         }
 
-        // --- 2. 防休眠功能 ---
         async function requestWakeLock() {
             try {
                 if ('wakeLock' in navigator) {
@@ -248,7 +234,6 @@
             }
         }
 
-        // --- 3. GPS 監控與語音 ---
         document.getElementById('btnStartGps').onclick = async (e) => {
             await requestWakeLock();
             if (watchId !== null) return;
@@ -266,14 +251,12 @@
                 { enableHighAccuracy: true }
             );
             
-            // 更改文字與顏色
             e.target.textContent = "時速唸讀中";
             e.target.classList.add('btn-active');
             gpsStatus.textContent = "唸讀中 (每 5km/h)";
             gpsStatus.style.color = "var(--accent-green)";
         };
 
-        // --- 4. 節拍器邏輯 ---
         function playNote(time) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -309,7 +292,6 @@
             }
         };
 
-        // --- 5. BPM 控制與輸入驗證 ---
         function validateBPM() {
             let val = parseInt(bpmInput.value);
             if (isNaN(val)) val = 120;
@@ -327,7 +309,6 @@
             bpmInput.value = Math.max(40, parseInt(bpmInput.value) - 1);
         };
 
-        // --- 6. 觸控鎖定與讀秒解鎖邏輯 ---
         const lockBtn = document.getElementById('btnLock');
         const lockOverlay = document.getElementById('lockOverlay');
         const unlockBtn = document.getElementById('btnUnlock');
@@ -337,21 +318,19 @@
         let countdownInterval;
         let timeLeft = 2;
 
-        // 開啟鎖定
         lockBtn.onclick = () => {
-            document.activeElement.blur(); // 收起鍵盤
+            document.activeElement.blur();
             lockOverlay.style.display = 'flex';
         };
 
-        // 解鎖邏輯：長按 2 秒
         const startUnlock = (e) => {
-            e.preventDefault(); // 防止預設縮放行為
+            e.preventDefault();
             timeLeft = 2;
             
-            unlockBtn.innerHTML = `唤醒...<div id="unlockCountDown">${timeLeft}</div>`; // 初始化讀秒
-            unlockBtn.style.background = var(--accent-green); // 喚醒中轉為淺綠色
+            unlockCountDown.style.display = 'block';
+            unlockBtn.innerHTML = `唤醒...<div id="unlockCountDown">${timeLeft}</div>`;
+            unlockBtn.style.background = 'var(--accent-green)'; 
             
-            // 每秒更新數字
             countdownInterval = setInterval(() => {
                 timeLeft--;
                 if (timeLeft > 0) {
@@ -359,7 +338,6 @@
                 }
             }, 1000);
 
-            // 2秒後正式解鎖
             unlockTimer = setTimeout(() => {
                 clearInterval(countdownInterval);
                 lockOverlay.style.display = 'none';
@@ -367,7 +345,6 @@
             }, 2000);
         };
 
-        // 取消解鎖
         const cancelUnlock = () => {
             clearTimeout(unlockTimer);
             clearInterval(countdownInterval);
@@ -376,14 +353,12 @@
 
         function resetUnlockBtn() {
             unlockBtn.innerHTML = "按住喚醒";
-            unlockBtn.style.background = var(--text-main); // 深灰色
+            unlockBtn.style.background = 'var(--text-main)'; 
         }
 
-        // 綁定解鎖事件（支援滑鼠與觸控）
         unlockBtn.addEventListener('mousedown', startUnlock);
         unlockBtn.addEventListener('touchstart', startUnlock);
         
-        // 只要手離開或滑開，立刻中斷解鎖
         unlockBtn.addEventListener('mouseup', cancelUnlock);
         unlockBtn.addEventListener('touchend', cancelUnlock);
         unlockBtn.addEventListener('mouseleave', cancelUnlock);
