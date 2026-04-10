@@ -11,8 +11,8 @@
             --text-main: #333333;
             --sub-text: #777777;
             --accent-green: #81c784;
+            --accent-blue: #4ba3e3;
             --border-color: #e0e0e0;
-            --danger-text: #d93025;
         }
 
         body {
@@ -20,14 +20,14 @@
             text-align: center;
             background: var(--main-bg);
             margin: 0;
-            padding: 12px; 
-            padding-bottom: calc(12px + env(safe-area-inset-bottom)); 
-            padding-top: calc(12px + env(safe-area-inset-top)); 
+            padding: 12px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            padding-top: calc(12px + env(safe-area-inset-top));
             box-sizing: border-box;
-            height: 100dvh; 
+            height: 100dvh;
             display: flex;
             flex-direction: column;
-            gap: 10px; 
+            gap: 10px;
             overflow: hidden;
             touch-action: manipulation;
             -webkit-user-select: none;
@@ -41,7 +41,6 @@
             align-items: center;
             width: 100%;
             padding: 0 5px;
-            box-sizing: border-box;
             flex: 0 0 auto;
         }
 
@@ -60,34 +59,52 @@
         .box {
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 20px; 
+            padding: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex: 1; 
-            min-height: 0; 
+            flex: 1;
+            min-height: 0;
         }
 
-        .label { font-size: 1.1em; color: var(--sub-text); margin-bottom: 5px; }
+        .label-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .label { font-size: 1.1em; color: var(--sub-text); }
+
+        .mode-toggle {
+            font-size: 0.8em;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: var(--border-color);
+            border: none;
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
+        .mode-toggle.active {
+            background: var(--accent-blue);
+            color: white;
+        }
 
         .data {
-            font-size: 4.5em; 
+            font-size: 4.5em;
             font-weight: 800;
             color: var(--text-main);
             margin: 5px 0;
-            font-variant-numeric: tabular-nums;
             line-height: 1;
         }
 
         .unit { font-size: 0.3em; margin-left: 2px; color: var(--accent-green); }
 
-        .sub-stats {
-            font-size: 1.2em;
-            color: var(--sub-text);
-            margin-bottom: 15px;
-        }
+        .sub-stats { font-size: 1.2em; color: var(--sub-text); margin-bottom: 15px; }
         .stat-highlight { color: var(--text-main); font-weight: bold; }
 
         .control-group {
@@ -100,12 +117,12 @@
         }
 
         button {
-            font-size: 1.1em; 
+            font-size: 1.1em;
             font-weight: bold;
             cursor: pointer;
             border: none;
             border-radius: 12px;
-            background: var(--border-color); 
+            background: var(--border-color);
             color: var(--text-main);
             transition: transform 0.1s;
         }
@@ -117,19 +134,19 @@
 
         .btn-main { width: 100%; padding: 18px; margin-top: 5px; }
         .btn-active { background: var(--accent-green) !important; color: white !important; }
-        
-        .btn-lock { 
-            background: var(--text-main); 
+
+        .btn-lock {
+            background: var(--text-main);
             color: white;
-            width: 100%; 
-            padding: 20px; 
+            width: 100%;
+            padding: 20px;
             flex: 0 0 auto;
             border-radius: 12px;
         }
 
         input {
-            font-size: 2.2em; 
-            width: 100px;
+            font-size: 2.2em;
+            width: 110px;
             height: 60px;
             text-align: center;
             border: 2px solid var(--border-color);
@@ -145,30 +162,27 @@
         }
 
         #btnUnlock { width: 160px; height: 160px; border-radius: 80px; background: var(--text-main); border: 4px solid white; font-size: 1.4em; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .status-text { font-size: 0.9em; color: var(--sub-text); margin-top: 8px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>步頻速度助手</h1>
-        <button class="btn-refresh" id="btnRefresh">數據歸零</button>
+        <h1>步頻助手</h1>
+        <button class="btn-refresh" id="btnRefresh">歸零</button>
     </div>
 
     <div class="box">
         <div class="label">目前時速</div>
         <div class="data" id="speedDisplay">0.0<span class="unit">km/h</span></div>
-        
-        <div class="sub-stats">
-            累計里程: <span class="stat-highlight" id="distDisplay">0.00</span> km
-        </div>
-
-        <button id="btnToggleGps" class="btn-main">啟動測速與里程</button>
-        <p class="status-text" id="gpsStatus">測速未啟動</p>
+        <div class="sub-stats">里程: <span class="stat-highlight" id="distDisplay">0.00</span> km</div>
+        <button id="btnToggleGps" class="btn-main">啟動測速</button>
     </div>
 
     <div class="box">
-        <div class="label">步頻 (BPM)</div>
+        <div class="label-row">
+            <span class="label" id="metroLabel">一般步頻 (BPM)</span>
+            <button class="mode-toggle" id="btnModeToggle">切換自行車</button>
+        </div>
         <div class="control-group">
             <button class="btn-round" id="btnMinus">−</button>
             <input type="number" id="bpmInput" value="120" inputmode="numeric">
@@ -180,85 +194,88 @@
     <button id="btnLock" class="btn-lock">螢幕休息 (鎖定)</button>
 
     <div id="lockOverlay">
-        <p>螢幕休息中，按住喚醒</p>
+        <p>鎖定中，按住喚醒</p>
         <button id="btnUnlock">按住喚醒</button>
     </div>
 
     <script>
-        let watchId = null, wakeLock = null, lastThreshold = 0;
+        let watchId = null, wakeLock = null;
         let audioCtx, timerID = null, nextNoteTime = 0.0;
-        
-        // 里程數據變數
         let totalDistance = parseFloat(localStorage.getItem('simpleSavedDist')) || 0;
         let lastPosition = null;
+        
+        // 模式狀態：false = 一般 (BPM), true = 自行車 (RPM)
+        let isBikeMode = false;
 
         const speedDisplay = document.getElementById('speedDisplay');
         const distDisplay = document.getElementById('distDisplay');
         const bpmInput = document.getElementById('bpmInput');
-        const gpsStatus = document.getElementById('gpsStatus');
+        const metroLabel = document.getElementById('metroLabel');
+        const btnModeToggle = document.getElementById('btnModeToggle');
 
-        // 初始化里程顯示
         distDisplay.textContent = totalDistance.toFixed(2);
 
-        // --- 歸零功能 ---
-        document.getElementById('btnRefresh').onclick = () => {
-            if(confirm("確定要將里程歸零嗎？")) {
-                totalDistance = 0;
-                localStorage.removeItem('simpleSavedDist');
-                distDisplay.textContent = "0.00";
-                speedDisplay.innerHTML = `0.0<span class="unit">km/h</span>`;
+        // --- 模式切換邏輯 ---
+        btnModeToggle.onclick = () => {
+            isBikeMode = !isBikeMode;
+            btnModeToggle.classList.toggle('active', isBikeMode);
+            if (isBikeMode) {
+                metroLabel.textContent = "自行車踏頻 (RPM)";
+                btnModeToggle.textContent = "切換一般";
+                // 換算顯示數值：BPM 180 -> RPM 90
+                bpmInput.value = Math.round(parseInt(bpmInput.value) / 2);
+            } else {
+                metroLabel.textContent = "一般步頻 (BPM)";
+                btnModeToggle.textContent = "切換自行車";
+                // 換算顯示數值：RPM 90 -> BPM 180
+                bpmInput.value = Math.round(parseInt(bpmInput.value) * 2);
             }
         };
 
-        // --- Haversine 公式計算里程 ---
-        function calcDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; 
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2)**2;
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        }
+        // --- 歸零 ---
+        document.getElementById('btnRefresh').onclick = () => {
+            if(confirm("歸零里程？")) {
+                totalDistance = 0;
+                localStorage.removeItem('simpleSavedDist');
+                distDisplay.textContent = "0.00";
+            }
+        };
 
         async function requestWakeLock() {
             try { if ('wakeLock' in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
         }
 
-        // --- GPS 邏輯 ---
+        // --- GPS ---
         document.getElementById('btnToggleGps').onclick = async (e) => {
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null; lastPosition = null;
-                e.target.textContent = "啟動測速與里程";
+                e.target.textContent = "啟動測速";
                 e.target.classList.remove('btn-active');
-                gpsStatus.textContent = "測速已停止";
-                gpsStatus.style.color = "var(--sub-text)";
             } else {
                 await requestWakeLock();
                 watchId = navigator.geolocation.watchPosition((pos) => {
                     let speedKmh = (pos.coords.speed || 0) * 3.6;
-                    const lat = pos.coords.latitude, lon = pos.coords.longitude;
-
                     if (lastPosition && speedKmh > 1.5) {
-                        const d = calcDistance(lastPosition.lat, lastPosition.lon, lat, lon);
-                        totalDistance += d;
+                        const R = 6371;
+                        const dLat = (pos.coords.latitude - lastPosition.lat) * Math.PI / 180;
+                        const dLon = (pos.coords.longitude - lastPosition.lon) * Math.PI / 180;
+                        const a = Math.sin(dLat/2)**2 + Math.cos(lastPosition.lat * Math.PI / 180) * Math.cos(pos.coords.latitude * Math.PI / 180) * Math.sin(dLon/2)**2;
+                        totalDistance += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
                         localStorage.setItem('simpleSavedDist', totalDistance);
                     }
-                    lastPosition = { lat, lon };
-                    
+                    lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                     speedDisplay.innerHTML = `${speedKmh.toFixed(1)}<span class="unit">km/h</span>`;
                     distDisplay.textContent = totalDistance.toFixed(2);
                 }, null, { enableHighAccuracy: true });
-                
                 e.target.textContent = "停止測速";
                 e.target.classList.add('btn-active');
-                gpsStatus.textContent = "測速監測中";
-                gpsStatus.style.color = "var(--accent-green)";
             }
         };
 
-        // --- 節拍器與鎖定邏輯 ---
+        // --- 節拍器核心邏輯 ---
         document.getElementById('btnToggleMetro').onclick = async (e) => {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioCtx) audioCtx = new AudioContext();
             if (timerID) {
                 clearTimeout(timerID); timerID = null;
                 e.target.textContent = "開始打拍"; e.target.classList.remove('btn-active');
@@ -266,6 +283,7 @@
                 await requestWakeLock();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
                 nextNoteTime = audioCtx.currentTime;
+                
                 const scheduler = () => {
                     while (nextNoteTime < audioCtx.currentTime + 0.1) {
                         const osc = audioCtx.createOscillator();
@@ -273,7 +291,12 @@
                         osc.connect(g); g.connect(audioCtx.destination);
                         g.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.05);
                         osc.start(nextNoteTime); osc.stop(nextNoteTime + 0.05);
-                        nextNoteTime += 60.0 / parseInt(bpmInput.value);
+                        
+                        // 關鍵換算：如果是自行車模式，輸入 90 RPM，實際要響 180 次
+                        let displayVal = parseInt(bpmInput.value);
+                        let actualBpm = isBikeMode ? displayVal * 2 : displayVal;
+                        
+                        nextNoteTime += 60.0 / actualBpm;
                     }
                     timerID = setTimeout(scheduler, 25);
                 };
@@ -283,15 +306,13 @@
         };
 
         document.getElementById('btnAdd').onclick = () => bpmInput.value = parseInt(bpmInput.value) + 1;
-        document.getElementById('btnMinus').onclick = () => bpmInput.value = Math.max(40, bpmInput.value - 1);
+        document.getElementById('btnMinus').onclick = () => bpmInput.value = Math.max(20, bpmInput.value - 1);
         document.getElementById('btnLock').onclick = () => document.getElementById('lockOverlay').style.display = 'flex';
         
         let unlockTimer;
         document.getElementById('btnUnlock').addEventListener('touchstart', (e) => {
             e.preventDefault();
-            unlockTimer = setTimeout(() => {
-                document.getElementById('lockOverlay').style.display = 'none';
-            }, 1500);
+            unlockTimer = setTimeout(() => { document.getElementById('lockOverlay').style.display = 'none'; }, 1500);
         });
         document.getElementById('btnUnlock').addEventListener('touchend', () => clearTimeout(unlockTimer));
     </script>
