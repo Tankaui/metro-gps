@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>步頻速度助手</title>
+    <title>步頻速度助手V20</title>
     <style>
         :root {
             --main-bg: #eeeeee;
@@ -104,7 +104,7 @@
 
         .unit { font-size: 0.3em; margin-left: 2px; color: var(--accent-green); }
 
-        .sub-stats { font-size: 1.2em; color: var(--sub-text); margin-bottom: 15px; }
+        .sub-stats { font-size: 1.2em; color: var(--sub-text); margin-bottom: 10px; }
         .stat-highlight { color: var(--text-main); font-weight: bold; }
 
         .control-group {
@@ -144,7 +144,7 @@
             border-radius: 12px;
         }
 
-        input {
+        input[type="number"] {
             font-size: 2.2em;
             width: 110px;
             height: 60px;
@@ -154,6 +154,18 @@
             background: #fff;
             color: var(--text-main);
             font-weight: bold;
+        }
+
+        /* 針對滑桿的簡單樣式設定，讓手機比較好點擊 */
+        input[type="range"] {
+            width: 80%;
+            margin: 10px 0 15px 0;
+        }
+
+        .freq-label {
+            font-size: 0.9em;
+            color: var(--sub-text);
+            margin-top: 5px;
         }
 
         #lockOverlay {
@@ -188,6 +200,10 @@
             <input type="number" id="bpmInput" value="120" inputmode="numeric">
             <button class="btn-round" id="btnAdd">+</button>
         </div>
+        
+        <div class="freq-label">音高設定: <span id="freqDisplay" class="stat-highlight">880</span> Hz</div>
+        <input type="range" id="freqSlider" min="200" max="2000" step="10" value="880">
+
         <button id="btnToggleMetro" class="btn-main">開始打拍</button>
     </div>
 
@@ -212,8 +228,17 @@
         const bpmInput = document.getElementById('bpmInput');
         const metroLabel = document.getElementById('metroLabel');
         const btnModeToggle = document.getElementById('btnModeToggle');
+        
+        // 音高滑桿與顯示元素
+        const freqSlider = document.getElementById('freqSlider');
+        const freqDisplay = document.getElementById('freqDisplay');
 
         distDisplay.textContent = totalDistance.toFixed(2);
+
+        // 監聽滑桿變動，即時更新文字顯示
+        freqSlider.addEventListener('input', (e) => {
+            freqDisplay.textContent = e.target.value;
+        });
 
         function announceSpeed(speed) {
             const currentThreshold = Math.floor(speed / 5) * 5;
@@ -303,11 +328,12 @@
                         const osc = audioCtx.createOscillator();
                         const g = audioCtx.createGain();
 
-                        // 調整波形與頻率，增加聲音穿透力
                         osc.type = 'square'; 
-                        osc.frequency.setValueAtTime(880, nextNoteTime); 
+                        
+                        // 動態讀取滑桿目前的頻率數值
+                        const currentFreq = parseInt(freqSlider.value);
+                        osc.frequency.setValueAtTime(currentFreq, nextNoteTime); 
 
-                        // 明確設定初始音量為 1 (最大)，再快速遞減產生短促音
                         g.gain.setValueAtTime(1, nextNoteTime);
                         g.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.05);
 
@@ -335,16 +361,13 @@
         let unlockTimer;
         const btnUnlock = document.getElementById('btnUnlock');
 
-        // pointerdown 可以同時支援手機觸控與電腦滑鼠點擊
         btnUnlock.addEventListener('pointerdown', (e) => {
             e.preventDefault(); 
-            // 設定 1.5 秒後解除鎖定
             unlockTimer = setTimeout(() => { 
                 document.getElementById('lockOverlay').style.display = 'none'; 
             }, 1500);
         });
 
-        // 當放開、滑出按鈕範圍，或被系統中斷時，立刻取消計時
         const cancelUnlock = () => clearTimeout(unlockTimer);
         btnUnlock.addEventListener('pointerup', cancelUnlock);
         btnUnlock.addEventListener('pointerleave', cancelUnlock);
