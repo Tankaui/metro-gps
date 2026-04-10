@@ -175,7 +175,7 @@
         <div class="label">目前時速</div>
         <div class="data" id="speedDisplay">0.0<span class="unit">km/h</span></div>
         <div class="sub-stats">里程: <span class="stat-highlight" id="distDisplay">0.00</span> km</div>
-        <button id="btnToggleGps" class="btn-main">啟動測速與報數</button>
+        <button id="btnToggleGps" class="btn-main">啟動測速與雙向報數</button>
     </div>
 
     <div class="box">
@@ -203,7 +203,7 @@
         let audioCtx, timerID = null, nextNoteTime = 0.0;
         let totalDistance = parseFloat(localStorage.getItem('simpleSavedDist')) || 0;
         let lastPosition = null;
-        let lastThreshold = 0; // 語音報數門檻
+        let lastThreshold = -1; // 初始化設為 -1，確保 0 也能被正確觸發
         
         let isBikeMode = false;
 
@@ -215,16 +215,23 @@
 
         distDisplay.textContent = totalDistance.toFixed(2);
 
-        // --- 語音報數函式 ---
+        // --- 修正後的雙向報數函式 ---
         function announceSpeed(speed) {
             const currentThreshold = Math.floor(speed / 5) * 5;
-            if (currentThreshold > 0 && currentThreshold > lastThreshold) {
-                const msg = new SpeechSynthesisUtterance(`時速 ${currentThreshold} 公里`);
-                msg.lang = 'zh-TW';
-                window.speechSynthesis.speak(msg);
+            
+            // 只要跨越了 5 的倍數級距（不論加減速），且跟上一次不同
+            if (currentThreshold !== lastThreshold) {
+                if (currentThreshold >= 5) {
+                    const msg = new SpeechSynthesisUtterance(`時速 ${currentThreshold} 公里`);
+                    msg.lang = 'zh-TW';
+                    window.speechSynthesis.speak(msg);
+                } else if (currentThreshold === 0 && lastThreshold !== -1) {
+                    // 只有在原本有速度但現在停下來時才報
+                    const msg = new SpeechSynthesisUtterance(`時速低於 5 公里`);
+                    msg.lang = 'zh-TW';
+                    window.speechSynthesis.speak(msg);
+                }
                 lastThreshold = currentThreshold;
-            } else if (currentThreshold < lastThreshold) {
-                lastThreshold = currentThreshold; 
             }
         }
 
@@ -257,15 +264,14 @@
         document.getElementById('btnToggleGps').onclick = async (e) => {
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
-                watchId = null; lastPosition = null; lastThreshold = 0;
-                e.target.textContent = "啟動測速與報數";
+                watchId = null; lastPosition = null; lastThreshold = -1;
+                e.target.textContent = "啟動測速與雙向報數";
                 e.target.classList.remove('btn-active');
             } else {
                 await requestWakeLock();
                 watchId = navigator.geolocation.watchPosition((pos) => {
                     let speedKmh = (pos.coords.speed || 0) * 3.6;
                     
-                    // 執行語音報數
                     announceSpeed(speedKmh);
 
                     if (lastPosition && speedKmh > 1.5) {
@@ -286,7 +292,7 @@
         };
 
         document.getElementById('btnToggleMetro').onclick = async (e) => {
-            if (!audioCtx) audioCtx = new AudioContext();
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (timerID) {
                 clearTimeout(timerID); timerID = null;
                 e.target.textContent = "開始打拍"; e.target.classList.remove('btn-active');
@@ -302,10 +308,8 @@
                         osc.connect(g); g.connect(audioCtx.destination);
                         g.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.05);
                         osc.start(nextNoteTime); osc.stop(nextNoteTime + 0.05);
-                        
                         let displayVal = parseInt(bpmInput.value);
                         let actualBpm = isBikeMode ? displayVal * 2 : displayVal;
-                        
                         nextNoteTime += 60.0 / actualBpm;
                     }
                     timerID = setTimeout(scheduler, 25);
