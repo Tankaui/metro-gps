@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>步頻速度助手V20</title>
+    <title>步頻速度助手</title>
     <style>
         :root {
             --main-bg: #eeeeee;
@@ -21,14 +21,16 @@
             background: var(--main-bg);
             margin: 0;
             padding: 12px;
-            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            /* 增加底部 padding，避免被手機瀏覽器底部的工具列遮擋 */
+            padding-bottom: calc(24px + env(safe-area-inset-bottom));
             padding-top: calc(12px + env(safe-area-inset-top));
             box-sizing: border-box;
-            height: 100dvh;
+            /* 改為 min-height 並允許上下滑動，避免內容過多時擠成一團 */
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            overflow: hidden;
+            gap: 12px;
+            overflow-y: auto;
             touch-action: manipulation;
             -webkit-user-select: none;
             user-select: none;
@@ -65,8 +67,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex: 1;
-            min-height: 0;
+            flex: 1 0 auto; /* 允許區塊依據內容長大 */
         }
 
         .label-row {
@@ -156,10 +157,9 @@
             font-weight: bold;
         }
 
-        /* 針對滑桿的簡單樣式設定，讓手機比較好點擊 */
         input[type="range"] {
-            width: 80%;
-            margin: 10px 0 15px 0;
+            width: 85%;
+            margin: 8px 0 12px 0;
         }
 
         .freq-label {
@@ -173,7 +173,12 @@
             background: rgba(20, 20, 20, 0.96); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white;
         }
 
-        #btnUnlock { width: 160px; height: 160px; border-radius: 80px; background: var(--text-main); border: 4px solid white; font-size: 1.4em; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #btnUnlock { 
+            width: 160px; height: 160px; border-radius: 80px; background: var(--text-main); border: 4px solid white; font-size: 1.4em; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            /* 阻擋 iOS 預設的長按選單與手勢，確保長按解鎖能正常運作 */
+            -webkit-touch-callout: none;
+            touch-action: none;
+        }
     </style>
 </head>
 <body>
@@ -229,13 +234,11 @@
         const metroLabel = document.getElementById('metroLabel');
         const btnModeToggle = document.getElementById('btnModeToggle');
         
-        // 音高滑桿與顯示元素
         const freqSlider = document.getElementById('freqSlider');
         const freqDisplay = document.getElementById('freqDisplay');
 
         distDisplay.textContent = totalDistance.toFixed(2);
 
-        // 監聽滑桿變動，即時更新文字顯示
         freqSlider.addEventListener('input', (e) => {
             freqDisplay.textContent = e.target.value;
         });
@@ -329,8 +332,6 @@
                         const g = audioCtx.createGain();
 
                         osc.type = 'square'; 
-                        
-                        // 動態讀取滑桿目前的頻率數值
                         const currentFreq = parseInt(freqSlider.value);
                         osc.frequency.setValueAtTime(currentFreq, nextNoteTime); 
 
