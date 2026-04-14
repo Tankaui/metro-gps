@@ -219,6 +219,7 @@
         <div class="label">目前時速</div>
         <div class="data" id="speedDisplay">0.0<span class="unit">km/h</span></div>
         <div class="sub-stats">里程: <span class="stat-highlight" id="distDisplay">0.00</span> km</div>
+        <div class="freq-label" style="margin-bottom: 8px; line-height: 1.3;">⚠️ 網頁版 GPS 易受干擾。<br>請保持螢幕長亮，勿退至背景或鎖定設備。</div>
         <button id="btnToggleGps" class="btn-main">啟動測速與超速提示</button>
     </div>
 
@@ -251,10 +252,10 @@
         let audioCtx, timerID = null, nextNoteTime = 0.0;
         let totalDistance = parseFloat(localStorage.getItem('simpleSavedDist')) || 0;
         let lastPosition = null;
+        let lastValidTime = 0;
         let isOverSpeed = false; 
         let isBikeMode = false;
         
-        // 新增：追蹤應用程式是否處於工作狀態
         let isAppActive = false; 
 
         const speedDisplay = document.getElementById('speedDisplay');
@@ -271,7 +272,6 @@
             freqDisplay.textContent = e.target.value;
         });
 
-        // 強化版 Wake Lock 請求機制
         async function requestWakeLock() {
             if ('wakeLock' in navigator) {
                 try {
@@ -286,7 +286,6 @@
             }
         }
 
-        // 檢查系統狀態，決定是否需要關閉長亮鎖
         function checkAppStatus() {
             if (!watchId && !timerID) {
                 isAppActive = false;
@@ -296,14 +295,12 @@
             }
         }
 
-        // 監聽網頁可見度變化。若切換 APP 再回來，必須重新請求長亮
         document.addEventListener('visibilitychange', async () => {
             if (document.visibilityState === 'visible' && isAppActive) {
                 await requestWakeLock();
             }
         });
 
-        // 絕對同步的音訊解鎖函數
         function unlockAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -383,31 +380,65 @@
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null; 
                 lastPosition = null; 
+                lastValidTime = 0;
                 isOverSpeed = false; 
                 e.target.textContent = "啟動測速與超速提示";
                 e.target.classList.remove('btn-active');
-                checkAppStatus(); // 關閉時檢查是否需釋放長亮鎖
+                checkAppStatus(); 
             } else {
                 isAppActive = true;
-                await requestWakeLock(); // 啟動時請求長亮
+                await requestWakeLock(); 
                 
                 watchId = navigator.geolocation.watchPosition((pos) => {
+                    const currentAcc = pos.coords.accuracy;
+                    const currentTime = pos.timestamp;
+
+                    // 1. 拒絕精確度過低的雜訊點 (大於 25 公尺)
+                    if (currentAcc > 25) return;
+
+                    // 2. 拒絕過度頻繁的設備快取點 (限制最短更新間隔 0.8 秒)
+                    if (lastValidTime && (currentTime - lastValidTime < 800)) return;
+
                     let speedKmh = (pos.coords.speed || 0) * 3.6;
-                    
                     announceSpeed(speedKmh);
 
-                    if (lastPosition && speedKmh > 1.5) {
+                    if (lastPosition) {
                         const R = 6371;
                         const dLat = (pos.coords.latitude - lastPosition.lat) * Math.PI / 180;
                         const dLon = (pos.coords.longitude - lastPosition.lon) * Math.PI / 180;
                         const a = Math.sin(dLat/2)**2 + Math.cos(lastPosition.lat * Math.PI / 180) * Math.cos(pos.coords.latitude * Math.PI / 180) * Math.sin(dLon/2)**2;
-                        totalDistance += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                        localStorage.setItem('simpleSavedDist', totalDistance);
+                        const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+
+                        const timeDiffSec = (currentTime - lastValidTime) / 1000;
+                        const calcSpeedKmh = (distance / timeDiffSec) * 3600;
+
+                        // 3. 嚴格判定：移動距離大於 2 公尺，且計算時速未超過不合理的 80km/h (攔截瞬間飄移點)
+                        if (distance > 0.002 && calcSpeedKmh < 80) {
+                            
+                            // 填補設備未回傳 speed 的狀況
+                            if (!pos.coords.speed && timeDiffSec > 0) speedKmh = calcSpeedKmh;
+
+                            totalDistance += distance;
+                            localStorage.setItem('simpleSavedDist', totalDistance);
+                            lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                            lastValidTime = currentTime;
+                        }
+                    } else {
+                        lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                        lastValidTime = currentTime;
                     }
-                    lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+
                     speedDisplay.innerHTML = `${speedKmh.toFixed(1)}<span class="unit">km/h</span>`;
                     distDisplay.textContent = totalDistance.toFixed(2);
-                }, null, { enableHighAccuracy: true });
+                    
+                }, (error) => {
+                    console.warn("GPS 異常:", error.message);
+                }, { 
+                    enableHighAccuracy: true, 
+                    maximumAge: 0,      // 強制拒絕舊的快取座標
+                    timeout: 5000       // 縮短逾時等待
+                });
+                
                 e.target.textContent = "停止測速";
                 e.target.classList.add('btn-active');
             }
@@ -419,10 +450,10 @@
             if (timerID) {
                 clearTimeout(timerID); timerID = null;
                 e.target.textContent = "開始打拍"; e.target.classList.remove('btn-active');
-                checkAppStatus(); // 關閉時檢查是否需釋放長亮鎖
+                checkAppStatus(); 
             } else {
                 isAppActive = true;
-                await requestWakeLock(); // 啟動時請求長亮
+                await requestWakeLock(); 
                 
                 nextNoteTime = audioCtx.currentTime;
                 
