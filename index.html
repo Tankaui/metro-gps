@@ -201,7 +201,7 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手 v28</h1>
+        <h1>步頻助手 v29 (雙重過濾)</h1>
     </div>
 
     <div class="box">
@@ -237,14 +237,46 @@
     </div>
 
     <script>
+        // --- 卡爾曼濾波器 (1D 速度平滑) ---
+        class KalmanFilter {
+            constructor() {
+                this.R = 5; // GPS 雜訊預期值 (越大越相信預測值，反應變慢但平滑)
+                this.Q = 1; // 現實速度變化的變異值 (越小越平滑)
+                this.x = NaN; 
+                this.P = 1; // 誤差協方差
+            }
+            filter(measurement) {
+                if (isNaN(this.x)) {
+                    this.x = measurement;
+                } else {
+                    // 預測狀態
+                    this.P = this.P + this.Q;
+                    // 計算卡爾曼增益
+                    let K = this.P / (this.P + this.R);
+                    // 更新狀態
+                    this.x = this.x + K * (measurement - this.x);
+                    this.P = (1 - K) * this.P;
+                }
+                return this.x;
+            }
+            reset() {
+                this.x = NaN;
+                this.P = 1;
+            }
+        }
+
+        const speedKalman = new KalmanFilter();
+
         let watchId = null, wakeLock = null;
         let audioCtx, timerID = null, nextNoteTime = 0.0;
         let lastPosition = null;
         let lastValidTime = 0;
         let isOverSpeed = false; 
         let isBikeMode = false;
-        
         let isAppActive = false; 
+
+        // --- 感測器融合變數 ---
+        let motionLevel = 0; // 記錄平滑後的物理震動幅度
 
         const speedDisplay = document.getElementById('speedDisplay');
         const lockSpeedDisplay = document.getElementById('lockSpeedDisplay');
@@ -256,6 +288,17 @@
 
         freqSlider.addEventListener('input', (e) => {
             freqDisplay.textContent = e.target.value;
+        });
+
+        // 監聽硬體加速度計 (判斷物理上是否靜止)
+        window.addEventListener('devicemotion', (e) => {
+            let acc = e.acceleration; // 不含重力的加速度
+            if (acc) {
+                // 計算 3D 空間的向量總和
+                let mag = Math.sqrt((acc.x || 0)**2 + (acc.y || 0)**2 + (acc.z || 0)**2);
+                // EMA (指數移動平均) 平滑化震動數據
+                motionLevel = motionLevel * 0.8 + mag * 0.2; 
+            }
         });
 
         async function requestWakeLock() {
@@ -337,6 +380,17 @@
             }
         }
 
+        function updateSpeedUI(speedKmh) {
+            // 防呆：顯示速度不得為負數
+            let displaySpeed = Math.max(0, speedKmh).toFixed(1);
+            
+            const speedHtml = `${displaySpeed}<span class="unit">km/h</span>`;
+            const lockSpeedHtml = `${displaySpeed}<span style="font-size: 0.3em; color: var(--accent-green); margin-left: 5px;">km/h</span>`;
+            
+            speedDisplay.innerHTML = speedHtml;
+            lockSpeedDisplay.innerHTML = lockSpeedHtml;
+        }
+
         btnModeToggle.onclick = () => {
             isBikeMode = !isBikeMode;
             btnModeToggle.classList.toggle('active', isBikeMode);
@@ -354,28 +408,47 @@
         document.getElementById('btnToggleGps').onclick = async (e) => {
             unlockAudio();
 
+            // 請求 iOS 設備的動態感測器權限
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                try {
+                    const permissionState = await DeviceMotionEvent.requestPermission();
+                    if (permissionState !== 'granted') console.warn('物理感測器權限未核准');
+                } catch (err) { console.warn('無法請求感測器權限', err); }
+            }
+
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null; 
                 lastPosition = null; 
                 lastValidTime = 0;
                 isOverSpeed = false; 
+                speedKalman.reset(); // 停止時重置濾波器
+                
                 e.target.textContent = "啟動測速與超速提示";
                 e.target.classList.remove('btn-active');
                 checkAppStatus(); 
             } else {
                 isAppActive = true;
                 await requestWakeLock(); 
+                speedKalman.reset();
                 
                 watchId = navigator.geolocation.watchPosition((pos) => {
                     const currentAcc = pos.coords.accuracy;
                     const currentTime = pos.timestamp;
 
+                    // 1. 感測器融合：絕對靜止阻斷
+                    // 如果裝置物理震動幅度極低 (<0.1)，代表手機根本沒在動，直接判定時速 0，捨棄 GPS 點
+                    if (motionLevel < 0.1) {
+                        speedKalman.reset(); // 清空舊預測
+                        updateSpeedUI(0);
+                        return;
+                    }
+
+                    // 2. 原有的 GPS 基礎雜訊過濾
                     if (currentAcc > 25) return;
                     if (lastValidTime && (currentTime - lastValidTime < 800)) return;
 
-                    let speedKmh = (pos.coords.speed || 0) * 3.6;
-                    announceSpeed(speedKmh);
+                    let rawSpeedKmh = (pos.coords.speed || 0) * 3.6;
 
                     if (lastPosition) {
                         const R = 6371;
@@ -387,9 +460,9 @@
                         const timeDiffSec = (currentTime - lastValidTime) / 1000;
                         const calcSpeedKmh = (distance / timeDiffSec) * 3600;
 
-                        // 仍然保留距離計算，僅用於防呆過濾，不作加總顯示
+                        // 防爆衝過濾
                         if (distance > 0.002 && calcSpeedKmh < 80) {
-                            if (!pos.coords.speed && timeDiffSec > 0) speedKmh = calcSpeedKmh;
+                            if (!pos.coords.speed && timeDiffSec > 0) rawSpeedKmh = calcSpeedKmh;
                             lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                             lastValidTime = currentTime;
                         }
@@ -398,12 +471,17 @@
                         lastValidTime = currentTime;
                     }
 
-                    // 同步更新主畫面與鎖定畫面的速度顯示
-                    const speedHtml = `${speedKmh.toFixed(1)}<span class="unit">km/h</span>`;
-                    const lockSpeedHtml = `${speedKmh.toFixed(1)}<span style="font-size: 0.3em; color: var(--accent-green); margin-left: 5px;">km/h</span>`;
+                    // 3. 卡爾曼濾波平滑化
+                    let filteredSpeedKmh = speedKalman.filter(rawSpeedKmh);
                     
-                    speedDisplay.innerHTML = speedHtml;
-                    lockSpeedDisplay.innerHTML = lockSpeedHtml;
+                    // 為了避免濾波導致的「長尾殘留數字」，當速度極低時直接切斷為 0
+                    if (filteredSpeedKmh < 1.0 && rawSpeedKmh < 0.5) {
+                        filteredSpeedKmh = 0;
+                        speedKalman.reset();
+                    }
+
+                    announceSpeed(filteredSpeedKmh);
+                    updateSpeedUI(filteredSpeedKmh);
                     
                 }, (error) => {
                     console.warn("GPS 異常:", error.message);
