@@ -341,9 +341,15 @@
         }
 
         function playBeeps(frequency, duration, repeat, interval) {
-            if (!audioCtx || audioCtx.state === 'suspended') return;
+            if (!audioCtx) return;
             
-            let startTime = audioCtx.currentTime;
+            // 修正點 1：如果音軌被系統暫停，強制嘗試喚醒，而非直接 return 結束
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // 修正點 2：加入 0.05 秒的緩衝，避免因時間為過去式而引發 DOMException
+            let startTime = audioCtx.currentTime + 0.05;
             for (let i = 0; i < repeat; i++) {
                 const osc = audioCtx.createOscillator();
                 const g = audioCtx.createGain();
