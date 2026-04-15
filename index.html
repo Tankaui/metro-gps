@@ -59,16 +59,8 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 0;
-        }
-
-        /* 調整區塊佔比，讓測速區塊佔據較大版面 */
-        .box-speed {
-            flex: 1.7;
-        }
-
-        .box-metro {
             flex: 1;
+            min-height: 0;
         }
 
         .speed-wrapper {
@@ -103,6 +95,7 @@
         }
 
         .data {
+            /* 使用 clamp 讓字體在小螢幕自動縮小，最大不超過 5em */
             font-size: clamp(3.5em, 16vw, 5em); 
             font-weight: 800;
             color: var(--text-main);
@@ -185,6 +178,7 @@
         }
         
         #lockSpeedDisplay {
+            /* 鎖定畫面的數字同樣加入 clamp 自動適應 */
             font-size: clamp(4.5em, 22vw, 7.5em) !important;
             font-weight: 800; color: white; margin-bottom: 40px; line-height: 1; font-variant-numeric: tabular-nums;
         }
@@ -221,6 +215,7 @@
             pointer-events: none;
         }
 
+        /* 針對 iPhone SE 2020 或其他短螢幕的專屬高度適應 */
         @media (max-height: 700px) {
             .label-row { margin-bottom: 12px; }
             .btn-main { padding: 12px; margin-top: 2px; }
@@ -236,10 +231,10 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手<span class="version-text">v30.0.3</span></h1>
+        <h1>步頻助手<span class="version-text">v30.0.2</span></h1>
     </div>
 
-    <div class="box box-speed">
+    <div class="box">
         <div class="speed-wrapper">
             <div class="label">目前時速</div>
             <div class="data" id="speedDisplay" style="margin-bottom: 10px;">0.0<span class="unit">km/h</span></div>
@@ -248,7 +243,7 @@
         <button id="btnToggleGps" class="btn-main">啟動測速與種花超速提示</button>
     </div>
 
-    <div class="box box-metro">
+    <div class="box">
         <div class="label-row">
             <span class="label" id="metroLabel">一般步頻 (BPM)</span>
             <button class="mode-toggle" id="btnModeToggle">切換自行車</button>
@@ -320,14 +315,6 @@
         const freqSlider = document.getElementById('freqSlider');
         const freqDisplay = document.getElementById('freqDisplay');
 
-        // 輸入框點擊與聚焦時，自動全選文字 (延遲確保 iOS Safari 順利觸發)
-        bpmInput.addEventListener('focus', (e) => {
-            setTimeout(() => e.target.select(), 10);
-        });
-        bpmInput.addEventListener('click', (e) => {
-            setTimeout(() => e.target.select(), 10);
-        });
-
         freqSlider.addEventListener('input', (e) => {
             freqDisplay.textContent = e.target.value;
         });
@@ -388,10 +375,12 @@
         function playBeeps(frequency, duration, repeat, interval) {
             if (!audioCtx) return;
             
+            // 如果音軌被系統暫停，強制嘗試喚醒
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
             
+            // 加入 0.05 秒的緩衝
             let startTime = audioCtx.currentTime + 0.05;
             for (let i = 0; i < repeat; i++) {
                 const osc = audioCtx.createOscillator();
