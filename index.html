@@ -19,8 +19,10 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             text-align: center;
             background: var(--main-bg);
-            margin: 0;
+            margin: 0 auto; /* 置中 */
             padding: 8px;
+            width: 100%;
+            max-width: 400px; /* 整體版面窄一點 */
             height: 100dvh;
             overflow: hidden;
             display: flex;
@@ -59,12 +61,18 @@
             min-height: 0;
         }
 
+        .speed-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* 讓內部標題與數據靠左對齊 */
+        }
+
         .label-row {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 10px;
-            margin-bottom: 2px;
+            margin-bottom: 15px; /* 加大間距，往上一點 */
         }
 
         .label { font-size: 1em; color: var(--sub-text); }
@@ -90,6 +98,7 @@
             color: var(--text-main);
             margin: 0;
             line-height: 1;
+            font-variant-numeric: tabular-nums; /* 鎖定數字等寬，避免寬度跳動 */
         }
 
         .unit { font-size: 0.3em; margin-left: 2px; color: var(--accent-green); }
@@ -201,14 +210,16 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手 v29</h1>
+        <h1>步頻助手 v30</h1>
     </div>
 
     <div class="box">
-        <div class="label">目前時速</div>
-        <div class="data" id="speedDisplay" style="margin-bottom: 10px;">0.0<span class="unit">km/h</span></div>
+        <div class="speed-wrapper">
+            <div class="label">目前時速</div>
+            <div class="data" id="speedDisplay" style="margin-bottom: 10px;">0.0<span class="unit">km/h</span></div>
+        </div>
         <div class="freq-label" style="margin-bottom: 8px; line-height: 1.3;">⚠️ 網頁版 GPS 易受干擾。<br>請保持螢幕長亮，勿退至背景或鎖定設備。</div>
-        <button id="btnToggleGps" class="btn-main">啟動測速與超速提示</button>
+        <button id="btnToggleGps" class="btn-main">啟動測速與種花超速提示</button>
     </div>
 
     <div class="box">
@@ -231,7 +242,7 @@
     <button id="btnLock" class="btn-lock">螢幕休息 (鎖定)</button>
 
     <div id="lockOverlay" oncontextmenu="return false;">
-        <div id="lockSpeedDisplay" style="font-size: 6em; font-weight: 800; color: white; margin-bottom: 40px; line-height: 1;">0.0<span style="font-size: 0.3em; color: var(--accent-green); margin-left: 5px;">km/h</span></div>
+        <div id="lockSpeedDisplay" style="font-size: 6em; font-weight: 800; color: white; margin-bottom: 40px; line-height: 1; font-variant-numeric: tabular-nums;">0.0<span style="font-size: 0.3em; color: var(--accent-green); margin-left: 5px;">km/h</span></div>
         <p style="color: var(--sub-text); margin-bottom: 15px;">鎖定中，按住圓圈</p>
         <button id="btnUnlock" oncontextmenu="return false;"><span>按住喚醒</span></button>
     </div>
@@ -423,7 +434,7 @@
                 isOverSpeed = false; 
                 speedKalman.reset(); 
                 
-                e.target.textContent = "啟動測速與超速提示";
+                e.target.textContent = "啟動測速與種花超速提示";
                 e.target.classList.remove('btn-active');
                 checkAppStatus(); 
             } else {
