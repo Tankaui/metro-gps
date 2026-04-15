@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>步頻速度助手</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#81c784">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="步頻助手">
     <style>
         :root {
             --main-bg: #eeeeee;
@@ -247,7 +254,7 @@
         </div>
         <div class="control-group">
             <button class="btn-round" id="btnMinus">−</button>
-            <input type="number" id="bpmInput" value="120" inputmode="numeric" min="10">
+            <input type="number" id="bpmInput" value="120" inputmode="numeric" min="20">
             <button class="btn-round" id="btnAdd">+</button>
         </div>
         
@@ -300,12 +307,9 @@
         let isOverSpeed = false; 
         let isBikeMode = false;
         let isAppActive = false; 
-        let wakeLockAlerted = false; 
-        
-        // --- 新增狀態管理變數 ---
-        let currentInternalBpm = 120; // 統一底層 BPM 真值
-        let gpsWatchdogTimer = null; // GPS 假死偵測計時器
+        let wakeLockAlerted = false; // 控制喚醒失敗警告只跳一次
 
+        // --- 感測器融合變數 ---
         let motionLevel = 0; 
 
         const speedDisplay = document.getElementById('speedDisplay');
@@ -316,19 +320,20 @@
         const freqSlider = document.getElementById('freqSlider');
         const freqDisplay = document.getElementById('freqDisplay');
 
-        // --- BPM 顯示與同步邏輯 ---
-        function updateBpmDisplay() {
-            bpmInput.value = isBikeMode ? Math.round(currentInternalBpm / 2) : currentInternalBpm;
-        }
-
-        bpmInput.addEventListener('focus', (e) => setTimeout(() => e.target.select(), 10));
-        bpmInput.addEventListener('click', (e) => setTimeout(() => e.target.select(), 10));
+        // 輸入框點擊與聚焦時，自動全選文字
+        bpmInput.addEventListener('focus', (e) => {
+            setTimeout(() => e.target.select(), 10);
+        });
+        bpmInput.addEventListener('click', (e) => {
+            setTimeout(() => e.target.select(), 10);
+        });
         
+        // 數值防呆機制：防止使用者手動輸入負數或空值導致當機
         bpmInput.addEventListener('change', (e) => {
             let val = parseInt(e.target.value);
-            if (isNaN(val) || val < 10) val = isBikeMode ? 10 : 20;
-            currentInternalBpm = isBikeMode ? val * 2 : val;
-            updateBpmDisplay();
+            if (isNaN(val) || val < 20) {
+                e.target.value = 20;
+            }
         });
 
         freqSlider.addEventListener('input', (e) => {
@@ -343,7 +348,6 @@
             }
         });
 
-        // --- WakeLock 獲取與防護機制 ---
         async function requestWakeLock() {
             if ('wakeLock' in navigator) {
                 try {
@@ -352,25 +356,19 @@
                         wakeLock = null;
                     }
                     wakeLock = await navigator.wakeLock.request('screen');
-                    
-                    // 監聽意外釋放，嘗試重啟
-                    wakeLock.addEventListener('release', () => {
-                        if (isAppActive && document.visibilityState === 'visible') {
-                            requestWakeLock();
-                        }
-                    });
-
                 } catch (err) {
-                    console.warn('Wake Lock 失敗:', err);
+                    console.warn('Wake Lock 失敗: 可能是處於省電模式，或並非 HTTPS 環境。');
                     if (!wakeLockAlerted) {
                         alert("系統提示：\n無法自動保持螢幕常亮 (可能為省電模式或權限限制)。\n為避免中途黑屏，請手動至手機設定延長休眠時間。");
                         wakeLockAlerted = true;
                     }
                     document.getElementById('sysWarning').innerHTML = '⚠️ 網頁版 GPS 易受干擾。<br><span style="color:#e53935; font-weight:bold;">常亮失效！請手動設定手機不休眠。</span>';
                 }
-            } else if (!wakeLockAlerted) {
-                alert("系統提示：\n您的瀏覽器不支援自動螢幕常亮功能。\n為避免中途黑屏，請手動至手機設定延長休眠時間。");
-                wakeLockAlerted = true;
+            } else {
+                if (!wakeLockAlerted) {
+                    alert("系統提示：\n您的瀏覽器不支援自動螢幕常亮功能。\n為避免中途黑屏，請手動至手機設定延長休眠時間。");
+                    wakeLockAlerted = true;
+                }
             }
         }
 
@@ -378,8 +376,7 @@
             if (!watchId && !timerID) {
                 isAppActive = false;
                 if (wakeLock !== null) {
-                    wakeLock.release().catch(()=>{});
-                    wakeLock = null;
+                    wakeLock.release().then(() => { wakeLock = null; });
                 }
             }
         }
@@ -394,7 +391,9 @@
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             gain.gain.value = 0;
@@ -406,7 +405,10 @@
 
         function playBeeps(frequency, duration, repeat, interval) {
             if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
             
             let startTime = audioCtx.currentTime + 0.05;
             for (let i = 0; i < repeat; i++) {
@@ -415,6 +417,7 @@
 
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(frequency, startTime);
+
                 g.gain.setValueAtTime(1, startTime);
                 g.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
@@ -423,6 +426,7 @@
                 
                 osc.start(startTime);
                 osc.stop(startTime + duration);
+                
                 startTime += interval;
             }
         }
@@ -439,8 +443,12 @@
 
         function updateSpeedUI(speedKmh) {
             let displaySpeed = Math.max(0, speedKmh).toFixed(1);
-            speedDisplay.innerHTML = `${displaySpeed}<span class="unit">km/h</span>`;
-            lockSpeedDisplay.innerHTML = `${displaySpeed}<span style="font-size: 0.25em; color: var(--accent-green); margin-left: 5px;">km/h</span>`;
+            
+            const speedHtml = `${displaySpeed}<span class="unit">km/h</span>`;
+            const lockSpeedHtml = `${displaySpeed}<span style="font-size: 0.25em; color: var(--accent-green); margin-left: 5px;">km/h</span>`;
+            
+            speedDisplay.innerHTML = speedHtml;
+            lockSpeedDisplay.innerHTML = lockSpeedHtml;
         }
 
         btnModeToggle.onclick = () => {
@@ -449,81 +457,13 @@
             if (isBikeMode) {
                 metroLabel.textContent = "自行車踏頻 (RPM)";
                 btnModeToggle.textContent = "切換一般節拍器";
+                bpmInput.value = Math.round(parseInt(bpmInput.value) / 2);
             } else {
                 metroLabel.textContent = "一般節拍器 (BPM)";
                 btnModeToggle.textContent = "切換自行車踏頻";
+                bpmInput.value = Math.round(parseInt(bpmInput.value) * 2);
             }
-            updateBpmDisplay();
         };
-
-        // --- GPS Watchdog 與重啟邏輯 ---
-        function startGpsWatchdog() {
-            clearTimeout(gpsWatchdogTimer);
-            gpsWatchdogTimer = setTimeout(() => {
-                // 如果裝置有在搖晃，且 APP 運作中卻 12 秒沒收到 GPS 更新，自動重啟
-                if (isAppActive && watchId && motionLevel > 0.1) {
-                    if (watchId) navigator.geolocation.clearWatch(watchId);
-                    startGeolocation();
-                }
-            }, 12000);
-        }
-
-        function startGeolocation() {
-            watchId = navigator.geolocation.watchPosition((pos) => {
-                startGpsWatchdog(); // 收到訊號就重置看門狗
-                
-                const currentAcc = pos.coords.accuracy;
-                const currentTime = pos.timestamp;
-
-                if (motionLevel < 0.1) {
-                    speedKalman.reset(); 
-                    updateSpeedUI(0);
-                    return;
-                }
-
-                if (currentAcc > 25) return;
-                if (lastValidTime && (currentTime - lastValidTime < 800)) return;
-
-                let rawSpeedKmh = (pos.coords.speed || 0) * 3.6;
-
-                if (lastPosition) {
-                    const R = 6371;
-                    const dLat = (pos.coords.latitude - lastPosition.lat) * Math.PI / 180;
-                    const dLon = (pos.coords.longitude - lastPosition.lon) * Math.PI / 180;
-                    const a = Math.sin(dLat/2)**2 + Math.cos(lastPosition.lat * Math.PI / 180) * Math.cos(pos.coords.latitude * Math.PI / 180) * Math.sin(dLon/2)**2;
-                    const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-
-                    const timeDiffSec = (currentTime - lastValidTime) / 1000;
-                    const calcSpeedKmh = (distance / timeDiffSec) * 3600;
-
-                    if (distance > 0.002 && calcSpeedKmh < 80) {
-                        if (!pos.coords.speed && timeDiffSec > 0) rawSpeedKmh = calcSpeedKmh;
-                        lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                        lastValidTime = currentTime;
-                    }
-                } else {
-                    lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                    lastValidTime = currentTime;
-                }
-
-                let filteredSpeedKmh = speedKalman.filter(rawSpeedKmh);
-                
-                if (filteredSpeedKmh < 1.0 && rawSpeedKmh < 0.5) {
-                    filteredSpeedKmh = 0;
-                    speedKalman.reset();
-                }
-
-                announceSpeed(filteredSpeedKmh);
-                updateSpeedUI(filteredSpeedKmh);
-                
-            }, (error) => {
-                console.warn("GPS 異常:", error.message);
-            }, { 
-                enableHighAccuracy: true, 
-                maximumAge: 0, 
-                timeout: 5000 
-            });
-        }
 
         document.getElementById('btnToggleGps').onclick = async (e) => {
             unlockAudio();
@@ -537,7 +477,6 @@
 
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
-                clearTimeout(gpsWatchdogTimer);
                 watchId = null; 
                 lastPosition = null; 
                 lastValidTime = 0;
@@ -549,10 +488,63 @@
                 checkAppStatus(); 
             } else {
                 window.alert("系統提示：\n當時速達到 20 km/h 時將發出高音警報。\n降回 19 km/h 時將發出低音解除警報。");
+
                 isAppActive = true;
                 await requestWakeLock(); 
                 speedKalman.reset();
-                startGeolocation();
+                
+                watchId = navigator.geolocation.watchPosition((pos) => {
+                    const currentAcc = pos.coords.accuracy;
+                    const currentTime = pos.timestamp;
+
+                    if (motionLevel < 0.1) {
+                        speedKalman.reset(); 
+                        updateSpeedUI(0);
+                        return;
+                    }
+
+                    if (currentAcc > 25) return;
+                    if (lastValidTime && (currentTime - lastValidTime < 800)) return;
+
+                    let rawSpeedKmh = (pos.coords.speed || 0) * 3.6;
+
+                    if (lastPosition) {
+                        const R = 6371;
+                        const dLat = (pos.coords.latitude - lastPosition.lat) * Math.PI / 180;
+                        const dLon = (pos.coords.longitude - lastPosition.lon) * Math.PI / 180;
+                        const a = Math.sin(dLat/2)**2 + Math.cos(lastPosition.lat * Math.PI / 180) * Math.cos(pos.coords.latitude * Math.PI / 180) * Math.sin(dLon/2)**2;
+                        const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+
+                        const timeDiffSec = (currentTime - lastValidTime) / 1000;
+                        const calcSpeedKmh = (distance / timeDiffSec) * 3600;
+
+                        if (distance > 0.002 && calcSpeedKmh < 80) {
+                            if (!pos.coords.speed && timeDiffSec > 0) rawSpeedKmh = calcSpeedKmh;
+                            lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                            lastValidTime = currentTime;
+                        }
+                    } else {
+                        lastPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                        lastValidTime = currentTime;
+                    }
+
+                    let filteredSpeedKmh = speedKalman.filter(rawSpeedKmh);
+                    
+                    if (filteredSpeedKmh < 1.0 && rawSpeedKmh < 0.5) {
+                        filteredSpeedKmh = 0;
+                        speedKalman.reset();
+                    }
+
+                    announceSpeed(filteredSpeedKmh);
+                    updateSpeedUI(filteredSpeedKmh);
+                    
+                }, (error) => {
+                    console.warn("GPS 異常:", error.message);
+                }, { 
+                    enableHighAccuracy: true, 
+                    maximumAge: 0, 
+                    timeout: 5000 
+                });
                 
                 e.target.textContent = "停止測速";
                 e.target.classList.add('btn-active');
@@ -573,6 +565,7 @@
                 nextNoteTime = audioCtx.currentTime;
                 
                 const scheduler = () => {
+                    // 時間同步保護：防止網頁從背景恢復時產生音效暴衝
                     if (nextNoteTime < audioCtx.currentTime) {
                         nextNoteTime = audioCtx.currentTime + 0.05;
                     }
@@ -594,8 +587,9 @@
                         osc.start(nextNoteTime); 
                         osc.stop(nextNoteTime + 0.05);
                         
-                        // 使用底層的統一 BPM 來計算，不依賴 UI 數值
-                        nextNoteTime += 60.0 / currentInternalBpm;
+                        let displayVal = parseInt(bpmInput.value);
+                        let actualBpm = isBikeMode ? displayVal * 2 : displayVal;
+                        nextNoteTime += 60.0 / actualBpm;
                     }
                     timerID = setTimeout(scheduler, 25);
                 };
@@ -605,15 +599,13 @@
         };
 
         document.getElementById('btnAdd').onclick = () => {
-            currentInternalBpm += isBikeMode ? 2 : 1;
-            updateBpmDisplay();
+            bpmInput.value = parseInt(bpmInput.value) + 1;
+            bpmInput.dispatchEvent(new Event('change')); // 觸發防呆驗證
         };
         document.getElementById('btnMinus').onclick = () => {
-            currentInternalBpm -= isBikeMode ? 2 : 1;
-            if(currentInternalBpm < 20) currentInternalBpm = 20;
-            updateBpmDisplay();
+            bpmInput.value = Math.max(20, bpmInput.value - 1);
+            bpmInput.dispatchEvent(new Event('change')); // 觸發防呆驗證
         };
-        
         document.getElementById('btnLock').onclick = () => document.getElementById('lockOverlay').style.display = 'flex';
         
         let unlockTimer;
@@ -652,6 +644,20 @@
         });
         btnUnlock.addEventListener('mouseup', cancelUnlock);
         btnUnlock.addEventListener('mouseleave', cancelUnlock);
+
+        // --- Service Worker 註冊機制開始 ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('Service Worker 註冊成功，範圍:', registration.scope);
+                    })
+                    .catch(err => {
+                        console.error('Service Worker 註冊失敗:', err);
+                    });
+            });
+        }
+        // --- Service Worker 註冊機制結束 ---
 
     </script>
 </body>
