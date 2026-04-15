@@ -242,8 +242,8 @@
 
     <div class="box">
         <div class="label-row">
-            <span class="label" id="metroLabel">一般步頻 (BPM)</span>
-            <button class="mode-toggle" id="btnModeToggle">切換自行車</button>
+            <span class="label" id="metroLabel">一般節拍器 (BPM)</span>
+            <button class="mode-toggle" id="btnModeToggle">切換自行車踏頻</button>
         </div>
         <div class="control-group">
             <button class="btn-round" id="btnMinus">−</button>
@@ -257,7 +257,7 @@
         <button id="btnToggleMetro" class="btn-main">開始打拍</button>
     </div>
 
-    <button id="btnLock" class="btn-lock">螢幕休息 (鎖定)</button>
+    <button id="btnLock" class="btn-lock">啟用螢幕鎖定防誤觸</button>
 
     <div id="lockOverlay" oncontextmenu="return false;">
         <div id="lockSpeedDisplay">0.0<span style="font-size: 0.25em; color: var(--accent-green); margin-left: 5px;">km/h</span></div>
@@ -449,11 +449,11 @@
             btnModeToggle.classList.toggle('active', isBikeMode);
             if (isBikeMode) {
                 metroLabel.textContent = "自行車踏頻 (RPM)";
-                btnModeToggle.textContent = "切換一般";
+                btnModeToggle.textContent = "切換一般節拍器";
                 bpmInput.value = Math.round(parseInt(bpmInput.value) / 2);
             } else {
-                metroLabel.textContent = "一般步頻 (BPM)";
-                btnModeToggle.textContent = "切換自行車";
+                metroLabel.textContent = "一般節拍器 (BPM)";
+                btnModeToggle.textContent = "切換自行車踏頻";
                 bpmInput.value = Math.round(parseInt(bpmInput.value) * 2);
             }
         };
