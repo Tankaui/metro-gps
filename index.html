@@ -95,7 +95,6 @@
         }
 
         .data {
-            /* 使用 clamp 讓字體在小螢幕自動縮小，最大不超過 5em */
             font-size: clamp(3.5em, 16vw, 5em); 
             font-weight: 800;
             color: var(--text-main);
@@ -178,7 +177,6 @@
         }
         
         #lockSpeedDisplay {
-            /* 鎖定畫面的數字同樣加入 clamp 自動適應 */
             font-size: clamp(4.5em, 22vw, 7.5em) !important;
             font-weight: 800; color: white; margin-bottom: 40px; line-height: 1; font-variant-numeric: tabular-nums;
         }
@@ -215,7 +213,6 @@
             pointer-events: none;
         }
 
-        /* 針對 iPhone SE 2020 或其他短螢幕的專屬高度適應 */
         @media (max-height: 700px) {
             .label-row { margin-bottom: 12px; }
             .btn-main { padding: 12px; margin-top: 2px; }
@@ -231,7 +228,7 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手<span class="version-text">v30.0.2</span></h1>
+        <h1>步頻助手<span class="version-text">v30.0.4</span></h1>
     </div>
 
     <div class="box">
@@ -239,7 +236,7 @@
             <div class="label">目前時速</div>
             <div class="data" id="speedDisplay" style="margin-bottom: 10px;">0.0<span class="unit">km/h</span></div>
         </div>
-        <div class="freq-label" style="margin-bottom: 8px; line-height: 1.3;">⚠️ 網頁版 GPS 易受干擾，僅作為簡易參考用。<br>請保持螢幕長亮，勿退至背景或鎖定設備。</div>
+        <div class="freq-label" id="sysWarning" style="margin-bottom: 8px; line-height: 1.3;">⚠️ 網頁版 GPS 易受干擾，此工具僅做為簡易參考。<br>請保持螢幕長亮，勿退至背景或鎖定設備。</div>
         <button id="btnToggleGps" class="btn-main">啟動測速與種花超速提示</button>
     </div>
 
@@ -250,7 +247,7 @@
         </div>
         <div class="control-group">
             <button class="btn-round" id="btnMinus">−</button>
-            <input type="number" id="bpmInput" value="120" inputmode="numeric">
+            <input type="number" id="bpmInput" value="120" inputmode="numeric" min="20">
             <button class="btn-round" id="btnAdd">+</button>
         </div>
         
@@ -303,6 +300,7 @@
         let isOverSpeed = false; 
         let isBikeMode = false;
         let isAppActive = false; 
+        let wakeLockAlerted = false; // 控制喚醒失敗警告只跳一次
 
         // --- 感測器融合變數 ---
         let motionLevel = 0; 
@@ -314,6 +312,22 @@
         const btnModeToggle = document.getElementById('btnModeToggle');
         const freqSlider = document.getElementById('freqSlider');
         const freqDisplay = document.getElementById('freqDisplay');
+
+        // 輸入框點擊與聚焦時，自動全選文字
+        bpmInput.addEventListener('focus', (e) => {
+            setTimeout(() => e.target.select(), 10);
+        });
+        bpmInput.addEventListener('click', (e) => {
+            setTimeout(() => e.target.select(), 10);
+        });
+        
+        // 數值防呆機制：防止使用者手動輸入負數或空值導致當機
+        bpmInput.addEventListener('change', (e) => {
+            let val = parseInt(e.target.value);
+            if (isNaN(val) || val < 20) {
+                e.target.value = 20;
+            }
+        });
 
         freqSlider.addEventListener('input', (e) => {
             freqDisplay.textContent = e.target.value;
@@ -337,6 +351,16 @@
                     wakeLock = await navigator.wakeLock.request('screen');
                 } catch (err) {
                     console.warn('Wake Lock 失敗: 可能是處於省電模式，或並非 HTTPS 環境。');
+                    if (!wakeLockAlerted) {
+                        alert("系統提示：\n無法自動保持螢幕常亮 (可能為省電模式或權限限制)。\n為避免中途黑屏，請手動至手機設定延長休眠時間。");
+                        wakeLockAlerted = true;
+                    }
+                    document.getElementById('sysWarning').innerHTML = '⚠️ 網頁版 GPS 易受干擾。<br><span style="color:#e53935; font-weight:bold;">常亮失效！請手動設定手機不休眠。</span>';
+                }
+            } else {
+                if (!wakeLockAlerted) {
+                    alert("系統提示：\n您的瀏覽器不支援自動螢幕常亮功能。\n為避免中途黑屏，請手動至手機設定延長休眠時間。");
+                    wakeLockAlerted = true;
                 }
             }
         }
@@ -375,12 +399,10 @@
         function playBeeps(frequency, duration, repeat, interval) {
             if (!audioCtx) return;
             
-            // 如果音軌被系統暫停，強制嘗試喚醒
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
             
-            // 加入 0.05 秒的緩衝
             let startTime = audioCtx.currentTime + 0.05;
             for (let i = 0; i < repeat; i++) {
                 const osc = audioCtx.createOscillator();
@@ -536,6 +558,11 @@
                 nextNoteTime = audioCtx.currentTime;
                 
                 const scheduler = () => {
+                    // 時間同步保護：防止網頁從背景恢復時產生音效暴衝
+                    if (nextNoteTime < audioCtx.currentTime) {
+                        nextNoteTime = audioCtx.currentTime + 0.05;
+                    }
+
                     while (nextNoteTime < audioCtx.currentTime + 0.1) {
                         const osc = audioCtx.createOscillator();
                         const g = audioCtx.createGain();
@@ -564,8 +591,14 @@
             }
         };
 
-        document.getElementById('btnAdd').onclick = () => bpmInput.value = parseInt(bpmInput.value) + 1;
-        document.getElementById('btnMinus').onclick = () => bpmInput.value = Math.max(20, bpmInput.value - 1);
+        document.getElementById('btnAdd').onclick = () => {
+            bpmInput.value = parseInt(bpmInput.value) + 1;
+            bpmInput.dispatchEvent(new Event('change')); // 觸發防呆驗證
+        };
+        document.getElementById('btnMinus').onclick = () => {
+            bpmInput.value = Math.max(20, bpmInput.value - 1);
+            bpmInput.dispatchEvent(new Event('change')); // 觸發防呆驗證
+        };
         document.getElementById('btnLock').onclick = () => document.getElementById('lockOverlay').style.display = 'flex';
         
         let unlockTimer;
