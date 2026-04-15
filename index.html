@@ -19,10 +19,10 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             text-align: center;
             background: var(--main-bg);
-            margin: 0 auto; /* 置中 */
+            margin: 0 auto;
             padding: 8px;
             width: 100%;
-            max-width: 400px; /* 整體版面窄一點 */
+            max-width: 400px;
             height: 100dvh;
             overflow: hidden;
             display: flex;
@@ -47,6 +47,8 @@
         }
 
         h1 { font-size: 1.3em; margin: 0; font-weight: 700; }
+        
+        .version-text { font-size: 0.6em; font-weight: normal; color: var(--sub-text); margin-left: 4px; }
 
         .box {
             background: var(--card-bg);
@@ -64,7 +66,7 @@
         .speed-wrapper {
             display: flex;
             flex-direction: column;
-            align-items: flex-start; /* 讓內部標題與數據靠左對齊 */
+            align-items: flex-start;
         }
 
         .label-row {
@@ -72,7 +74,7 @@
             justify-content: center;
             align-items: center;
             gap: 10px;
-            margin-bottom: 15px; /* 加大間距，往上一點 */
+            margin-bottom: 25px; /* 再加大間距，往上推 */
         }
 
         .label { font-size: 1em; color: var(--sub-text); }
@@ -93,15 +95,15 @@
         }
 
         .data {
-            font-size: 4em;
+            font-size: 5em; /* 時速數字加大 */
             font-weight: 800;
             color: var(--text-main);
             margin: 0;
             line-height: 1;
-            font-variant-numeric: tabular-nums; /* 鎖定數字等寬，避免寬度跳動 */
+            font-variant-numeric: tabular-nums;
         }
 
-        .unit { font-size: 0.3em; margin-left: 2px; color: var(--accent-green); }
+        .unit { font-size: 0.25em; margin-left: 2px; color: var(--accent-green); } /* 配合大字體微調單位比例 */
 
         .sub-stats { font-size: 1.1em; color: var(--sub-text); margin-bottom: 5px; }
         .stat-highlight { color: var(--text-main); font-weight: bold; }
@@ -210,7 +212,7 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手 v30</h1>
+        <h1>步頻助手<span class="version-text">v30.0.1</span></h1>
     </div>
 
     <div class="box">
@@ -218,7 +220,7 @@
             <div class="label">目前時速</div>
             <div class="data" id="speedDisplay" style="margin-bottom: 10px;">0.0<span class="unit">km/h</span></div>
         </div>
-        <div class="freq-label" style="margin-bottom: 8px; line-height: 1.3;">⚠️ 網頁版 GPS 易受干擾，僅能作為簡易參考。<br>請保持螢幕長亮，勿退至背景或鎖定設備。</div>
+        <div class="freq-label" style="margin-bottom: 8px; line-height: 1.3;">⚠️ 網頁版 GPS 易受干擾。<br>請保持螢幕長亮，勿退至背景或鎖定設備。</div>
         <button id="btnToggleGps" class="btn-main">啟動測速與種花超速提示</button>
     </div>
 
@@ -242,7 +244,7 @@
     <button id="btnLock" class="btn-lock">螢幕休息 (鎖定)</button>
 
     <div id="lockOverlay" oncontextmenu="return false;">
-        <div id="lockSpeedDisplay" style="font-size: 6em; font-weight: 800; color: white; margin-bottom: 40px; line-height: 1; font-variant-numeric: tabular-nums;">0.0<span style="font-size: 0.3em; color: var(--accent-green); margin-left: 5px;">km/h</span></div>
+        <div id="lockSpeedDisplay" style="font-size: 7.5em; font-weight: 800; color: white; margin-bottom: 40px; line-height: 1; font-variant-numeric: tabular-nums;">0.0<span style="font-size: 0.25em; color: var(--accent-green); margin-left: 5px;">km/h</span></div>
         <p style="color: var(--sub-text); margin-bottom: 15px;">鎖定中，按住圓圈</p>
         <button id="btnUnlock" oncontextmenu="return false;"><span>按住喚醒</span></button>
     </div>
@@ -396,7 +398,7 @@
             let displaySpeed = Math.max(0, speedKmh).toFixed(1);
             
             const speedHtml = `${displaySpeed}<span class="unit">km/h</span>`;
-            const lockSpeedHtml = `${displaySpeed}<span style="font-size: 0.3em; color: var(--accent-green); margin-left: 5px;">km/h</span>`;
+            const lockSpeedHtml = `${displaySpeed}<span style="font-size: 0.25em; color: var(--accent-green); margin-left: 5px;">km/h</span>`;
             
             speedDisplay.innerHTML = speedHtml;
             lockSpeedDisplay.innerHTML = lockSpeedHtml;
