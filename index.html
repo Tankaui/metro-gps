@@ -74,7 +74,7 @@
             justify-content: center;
             align-items: center;
             gap: 10px;
-            margin-bottom: 25px; /* 再加大間距，往上推 */
+            margin-bottom: 25px;
         }
 
         .label { font-size: 1em; color: var(--sub-text); }
@@ -95,7 +95,8 @@
         }
 
         .data {
-            font-size: 5em; /* 時速數字加大 */
+            /* 使用 clamp 讓字體在小螢幕自動縮小，最大不超過 5em */
+            font-size: clamp(3.5em, 16vw, 5em); 
             font-weight: 800;
             color: var(--text-main);
             margin: 0;
@@ -103,7 +104,7 @@
             font-variant-numeric: tabular-nums;
         }
 
-        .unit { font-size: 0.25em; margin-left: 2px; color: var(--accent-green); } /* 配合大字體微調單位比例 */
+        .unit { font-size: 0.25em; margin-left: 2px; color: var(--accent-green); }
 
         .sub-stats { font-size: 1.1em; color: var(--sub-text); margin-bottom: 5px; }
         .stat-highlight { color: var(--text-main); font-weight: bold; }
@@ -175,6 +176,12 @@
             -webkit-user-select: none;
             user-select: none;
         }
+        
+        #lockSpeedDisplay {
+            /* 鎖定畫面的數字同樣加入 clamp 自動適應 */
+            font-size: clamp(4.5em, 22vw, 7.5em) !important;
+            font-weight: 800; color: white; margin-bottom: 40px; line-height: 1; font-variant-numeric: tabular-nums;
+        }
 
         #btnUnlock { 
             position: relative;
@@ -207,12 +214,24 @@
             z-index: 1;
             pointer-events: none;
         }
+
+        /* 針對 iPhone SE 2020 或其他短螢幕的專屬高度適應 */
+        @media (max-height: 700px) {
+            .label-row { margin-bottom: 12px; }
+            .btn-main { padding: 12px; margin-top: 2px; }
+            .btn-lock { padding: 12px; }
+            .box { padding: 8px; }
+            input[type="number"] { height: 45px; font-size: 1.8em; }
+            .btn-round { width: 45px; height: 45px; font-size: 1.8em; }
+            #btnUnlock { width: 130px; height: 130px; border-radius: 65px; font-size: 1.2em; }
+            #lockSpeedDisplay { margin-bottom: 25px; }
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>步頻助手<span class="version-text">v30.0.1</span></h1>
+        <h1>步頻助手<span class="version-text">v30.0.2</span></h1>
     </div>
 
     <div class="box">
@@ -244,7 +263,7 @@
     <button id="btnLock" class="btn-lock">螢幕休息 (鎖定)</button>
 
     <div id="lockOverlay" oncontextmenu="return false;">
-        <div id="lockSpeedDisplay" style="font-size: 7.5em; font-weight: 800; color: white; margin-bottom: 40px; line-height: 1; font-variant-numeric: tabular-nums;">0.0<span style="font-size: 0.25em; color: var(--accent-green); margin-left: 5px;">km/h</span></div>
+        <div id="lockSpeedDisplay">0.0<span style="font-size: 0.25em; color: var(--accent-green); margin-left: 5px;">km/h</span></div>
         <p style="color: var(--sub-text); margin-bottom: 15px;">鎖定中，按住圓圈</p>
         <button id="btnUnlock" oncontextmenu="return false;"><span>按住喚醒</span></button>
     </div>
@@ -356,12 +375,12 @@
         function playBeeps(frequency, duration, repeat, interval) {
             if (!audioCtx) return;
             
-            // 修正點 1：如果音軌被系統暫停，強制嘗試喚醒，而非直接 return 結束
+            // 如果音軌被系統暫停，強制嘗試喚醒
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
             
-            // 修正點 2：加入 0.05 秒的緩衝，避免因時間為過去式而引發 DOMException
+            // 加入 0.05 秒的緩衝
             let startTime = audioCtx.currentTime + 0.05;
             for (let i = 0; i < repeat; i++) {
                 const osc = audioCtx.createOscillator();
@@ -384,12 +403,11 @@
         }
 
         function announceSpeed(speed) {
-            // 依照要求，精確調整為 20 km/h 與 19 km/h
             if (speed >= 20 && !isOverSpeed) {
-                playBeeps(1200, 0.05, 5, 0.1); // 高音超速警報
+                playBeeps(1200, 0.05, 5, 0.1); 
                 isOverSpeed = true;
             } else if (speed <= 19 && isOverSpeed) {
-                playBeeps(300, 0.5, 1, 0); // 低音解除警報
+                playBeeps(300, 0.5, 1, 0); 
                 isOverSpeed = false;
             }
         }
@@ -440,7 +458,6 @@
                 e.target.classList.remove('btn-active');
                 checkAppStatus(); 
             } else {
-                // 加入啟動時的明確提醒
                 window.alert("系統提示：\n當時速達到 20 km/h 時將發出高音警報。\n降回 19 km/h 時將發出低音解除警報。");
 
                 isAppActive = true;
