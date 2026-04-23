@@ -1,6 +1,6 @@
 // 每次修改 index.html 的程式碼後，請務必在此更改版本號
 // 這樣才能觸發更新機制並刪除舊快取
-const CACHE_VERSION = 'v30.0.7'; 
+const CACHE_VERSION = 'v30.0.8'; 
 const CACHE_NAME = `pace-assistant-${CACHE_VERSION}`;
 
 // 這裡列出離線時需要的所有靜態檔案
