@@ -6,20 +6,21 @@
     <title>步頻速度助手</title>
     
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#81c784">
+    <meta name="theme-color" content="#65aae1">
     <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="步頻助手">
     <style>
         :root {
-            --main-bg: #eeeeee;
+            /* 依據參考圖調整的主色調與背景色 */
+            --main-bg: #f5f6f9;
             --card-bg: #ffffff;
-            --text-main: #333333;
-            --sub-text: #777777;
-            --accent-green: #81c784;
-            --accent-blue: #4ba3e3;
-            --border-color: #e0e0e0;
+            --text-main: #1c1c1e;
+            --sub-text: #8e8e93;
+            --accent-green: #a8e6cf; 
+            --accent-blue: #65aae1; /* 圖片中的主視覺藍色 */
+            --border-color: #e8e8ed;
         }
 
         body {
@@ -53,21 +54,22 @@
             flex: 0 0 auto;
         }
 
-        h1 { font-size: 1.3em; margin: 0; font-weight: 700; }
+        h1 { font-size: 1.3em; margin: 0; font-weight: 700; color: var(--text-main); }
         
         .version-text { font-size: 0.6em; font-weight: normal; color: var(--sub-text); margin-left: 4px; }
 
         .box {
             background: var(--card-bg);
-            border-radius: 16px;
+            border-radius: 20px; /* 增加圓角以符合參考圖 */
             padding: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.03); /* 柔和的卡片陰影 */
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             flex: 1;
             min-height: 0;
+            border: 1px solid rgba(255, 255, 255, 0.5); /* 輕微的高光邊框增加質感 */
         }
 
         .speed-wrapper {
@@ -84,21 +86,22 @@
             margin-bottom: 25px;
         }
 
-        .label { font-size: 1em; color: var(--sub-text); }
+        .label { font-size: 1em; color: var(--sub-text); font-weight: 600; }
 
         .mode-toggle {
             font-size: 0.8em;
-            padding: 4px 10px;
-            border-radius: 6px;
-            background: var(--border-color);
-            border: none;
-            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: var(--main-bg);
+            border: 1px solid var(--border-color);
+            color: var(--sub-text);
             font-weight: bold;
         }
 
         .mode-toggle.active {
             background: var(--accent-blue);
             color: white;
+            border-color: var(--accent-blue);
         }
 
         .data {
@@ -110,7 +113,7 @@
             font-variant-numeric: tabular-nums;
         }
 
-        .unit { font-size: 0.25em; margin-left: 2px; color: var(--accent-green); }
+        .unit { font-size: 0.25em; margin-left: 2px; color: var(--accent-blue); }
 
         .sub-stats { font-size: 1.1em; color: var(--sub-text); margin-bottom: 5px; }
         .stat-highlight { color: var(--text-main); font-weight: bold; }
@@ -128,28 +131,34 @@
             font-size: 1.1em;
             font-weight: bold;
             cursor: pointer;
-            border: none;
-            border-radius: 12px;
-            background: var(--border-color);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--card-bg);
             color: var(--text-main);
-            transition: transform 0.1s;
+            transition: transform 0.1s, background 0.2s, color 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
 
         .btn-round {
             width: 55px; height: 55px; border-radius: 50%;
             font-size: 2em; display: flex; justify-content: center; align-items: center;
+            background: var(--main-bg);
+            border: none;
+            color: var(--text-main);
         }
 
-        .btn-main { width: 100%; padding: 15px; margin-top: 5px; }
-        .btn-active { background: var(--accent-green) !important; color: white !important; }
+        .btn-main { width: 100%; padding: 16px; margin-top: 5px; border-radius: 16px; }
+        .btn-active { background: var(--accent-blue) !important; color: white !important; border-color: var(--accent-blue) !important; }
 
         .btn-lock {
-            background: var(--text-main);
-            color: white;
+            background: var(--main-bg);
+            color: var(--text-main);
+            border: 1px dashed var(--border-color);
             width: 100%;
             padding: 16px;
             flex: 0 0 auto;
-            border-radius: 12px;
+            border-radius: 16px;
+            box-shadow: none;
         }
 
         input[type="number"] {
@@ -157,16 +166,18 @@
             width: 100px;
             height: 55px;
             text-align: center;
-            border: 2px solid var(--border-color);
-            border-radius: 10px;
-            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--card-bg);
             color: var(--text-main);
             font-weight: bold;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.01);
         }
 
         input[type="range"] {
             width: 85%;
             margin: 5px 0 10px 0;
+            accent-color: var(--accent-blue);
         }
 
         .freq-label {
@@ -177,10 +188,11 @@
 
         #lockOverlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(20, 20, 20, 0.98); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white;
+            background: rgba(20, 20, 22, 0.96); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+            backdrop-filter: blur(10px);
         }
         
         #lockSpeedDisplay {
@@ -192,11 +204,12 @@
             position: relative;
             overflow: hidden;
             width: 160px; height: 160px; border-radius: 80px; 
-            background: var(--text-main); border: 4px solid white; 
+            background: rgba(255,255,255,0.1); border: 3px solid rgba(255,255,255,0.5); 
             font-size: 1.4em; color: white; 
             display: flex; flex-direction: column; justify-content: center; align-items: center; 
             -webkit-touch-callout: none;
             touch-action: none;
+            box-shadow: none;
         }
 
         #btnUnlock::before {
@@ -204,7 +217,7 @@
             position: absolute;
             bottom: 0; left: 0;
             width: 100%; height: 0%;
-            background: var(--accent-green);
+            background: var(--accent-blue);
             z-index: 0;
             transition: none;
         }
@@ -218,13 +231,14 @@
             position: relative;
             z-index: 1;
             pointer-events: none;
+            font-weight: bold;
         }
 
         @media (max-height: 700px) {
             .label-row { margin-bottom: 12px; }
             .btn-main { padding: 12px; margin-top: 2px; }
             .btn-lock { padding: 12px; }
-            .box { padding: 8px; }
+            .box { padding: 8px; border-radius: 16px; }
             input[type="number"] { height: 45px; font-size: 1.8em; }
             .btn-round { width: 45px; height: 45px; font-size: 1.8em; }
             #btnUnlock { width: 130px; height: 130px; border-radius: 65px; font-size: 1.2em; }
@@ -235,7 +249,7 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手<span class="version-text">v30.0.5</span></h1>
+        <h1>步頻助手<span class="version-text">v30.0.7</span></h1>
     </div>
 
     <div class="box">
@@ -267,8 +281,8 @@
     <button id="btnLock" class="btn-lock">啟用螢幕鎖定防誤觸</button>
 
     <div id="lockOverlay" oncontextmenu="return false;">
-        <div id="lockSpeedDisplay">0.0<span style="font-size: 0.25em; color: var(--accent-green); margin-left: 5px;">km/h</span></div>
-        <p style="color: var(--sub-text); margin-bottom: 15px;">鎖定中，按住圓圈</p>
+        <div id="lockSpeedDisplay">0.0<span style="font-size: 0.25em; color: var(--accent-blue); margin-left: 5px;">km/h</span></div>
+        <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px;">鎖定中，按住圓圈</p>
         <button id="btnUnlock" oncontextmenu="return false;"><span>按住喚醒</span></button>
     </div>
 
@@ -445,7 +459,7 @@
             let displaySpeed = Math.max(0, speedKmh).toFixed(1);
             
             const speedHtml = `${displaySpeed}<span class="unit">km/h</span>`;
-            const lockSpeedHtml = `${displaySpeed}<span style="font-size: 0.25em; color: var(--accent-green); margin-left: 5px;">km/h</span>`;
+            const lockSpeedHtml = `${displaySpeed}<span style="font-size: 0.25em; color: var(--accent-blue); margin-left: 5px;">km/h</span>`;
             
             speedDisplay.innerHTML = speedHtml;
             lockSpeedDisplay.innerHTML = lockSpeedHtml;
