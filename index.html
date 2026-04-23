@@ -151,48 +151,26 @@
         .btn-active { background: var(--accent-blue) !important; color: white !important; border-color: var(--accent-blue) !important; }
 
         .btn-lock {
-            background: var(--main-bg);
+            background: #e2e4ea; /* 稍微加深的淺灰色底，避免被背景吃掉 */
             color: var(--text-main);
-            border: 1px dashed var(--border-color);
+            border: none;
             width: 100%;
             padding: 16px;
             flex: 0 0 auto;
             border-radius: 16px;
-            box-shadow: none;
-        }
-
-        input[type="number"] {
-            font-size: 2em;
-            width: 100px;
-            height: 55px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            background: var(--card-bg);
-            color: var(--text-main);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             font-weight: bold;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.01);
-        }
-
-        input[type="range"] {
-            width: 85%;
-            margin: 5px 0 10px 0;
-            accent-color: var(--accent-blue);
-        }
-
-        .freq-label {
-            font-size: 0.85em;
-            color: var(--sub-text);
-            margin-top: 5px;
         }
 
         #lockOverlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw; height: 100dvh; /* 確保填滿各種手機瀏覽器的動態視窗 */
             background: rgba(20, 20, 22, 0.96); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
             backdrop-filter: blur(10px);
+            padding-bottom: env(safe-area-inset-bottom); /* 覆蓋安全區域底部 */
         }
         
         #lockSpeedDisplay {
@@ -249,7 +227,7 @@
 <body>
 
     <div class="header">
-        <h1>步頻助手<span class="version-text">v30.0.7</span></h1>
+        <h1>步頻助手<span class="version-text">v30.0.8</span></h1>
     </div>
 
     <div class="box">
